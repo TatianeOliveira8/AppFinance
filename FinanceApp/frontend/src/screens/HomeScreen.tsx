@@ -55,7 +55,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         currentDate.getMonth() + 1,
         currentDate.getFullYear()
       );
-      console.log('[DEBUG] Resposta completa do backend:', JSON.stringify(data, null, 2));
       setSummary(data);
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
@@ -87,18 +86,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   const activeCategories = displayType === 'expense' ? summary?.by_category : summary?.by_category_income;
-
-  console.log(`[RENDER] displayType=${displayType}, by_category?.length=${summary?.by_category?.length}, by_category_income?.length=${summary?.by_category_income?.length}`);
-  console.log(`[RENDER] activeCategories=`, activeCategories);
-
-  if (activeCategories) {
-    console.log(`[UI] Exibindo ${activeCategories.length} categorias de ${displayType}`);
-    console.log(`[UI] Categorias:`, activeCategories);
-  } else {
-    console.log(`[UI] activeCategories é NULL/undefined para ${displayType}`);
-    console.log(`[UI] summary?.by_category: `, summary?.by_category);
-    console.log(`[UI] summary?.by_category_income: `, summary?.by_category_income);
-  }
 
   if (loading && !summary) {
     return (

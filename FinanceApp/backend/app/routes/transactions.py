@@ -147,13 +147,13 @@ def get_summary(
     for t in transactions:
         if t.type == TransactionType.expense and is_effectively_paid(t, now_naive):
             if t.category:
-                cat_key = (t.category.name, t.category.icon, t.category.color)
+                cat_key = (t.category.id, t.category.name, t.category.icon, t.category.color)
                 if cat_key not in categories_expense_dict:
                     categories_expense_dict[cat_key] = 0
                 categories_expense_dict[cat_key] += t.value
     
     categories_expense = [
-        {"name": k[0], "icon": k[1], "color": k[2], "value": v}
+        {"id": k[0], "name": k[1], "icon": k[2], "color": k[3], "value": v}
         for k, v in categories_expense_dict.items()
     ]
     
@@ -162,33 +162,31 @@ def get_summary(
     for t in transactions:
         if t.type == TransactionType.income and is_effectively_paid(t, now_naive):
             if t.category:
-                cat_key = (t.category.name, t.category.icon, t.category.color)
+                cat_key = (t.category.id, t.category.name, t.category.icon, t.category.color)
                 if cat_key not in categories_income_dict:
                     categories_income_dict[cat_key] = 0
                 categories_income_dict[cat_key] += t.value
     
     categories_income = [
-        {"name": k[0], "icon": k[1], "color": k[2], "value": v}
+        {"id": k[0], "name": k[1], "icon": k[2], "color": k[3], "value": v}
         for k, v in categories_income_dict.items()
     ]
     
     by_category_expense = [
         {
-            "name": c["name"], "icon": c["icon"], "color": c["color"], "value": c["value"], 
+            "id": c["id"], "name": c["name"], "icon": c["icon"], "color": c["color"], "value": c["value"], 
             "percentage": round((c["value"]/total_expense_month*100),1) if total_expense_month > 0 else 0
         } for c in categories_expense
     ]
 
     by_category_income = [
         {
-            "name": c["name"], "icon": c["icon"], "color": c["color"], "value": c["value"], 
+            "id": c["id"], "name": c["name"], "icon": c["icon"], "color": c["color"], "value": c["value"], 
             "percentage": round((c["value"]/total_income_month*100),1) if total_income_month > 0 else 0
         } for c in categories_income
     ]
 
     print(f"DEBUG: Consultando Dashboard para User {user_id} em {month}/{year}")
-    print(f"DEBUG: Total receitas={total_income_month} | Total gastos={total_expense_month}")
-    print(f"DEBUG: Categorias receita={len(by_category_income)} | Categorias gasto={len(by_category_expense)}")
     
     response = {
         "balance": balance,
@@ -196,13 +194,9 @@ def get_summary(
         "total_expense": total_expense_month,
         "pending_income": pending_income,
         "pending_expense": pending_expense,
-        "by_category": by_category_expense, # Mantido para compatibilidade
+        "by_category": by_category_expense,
         "by_category_income": by_category_income
     }
-    
-    print(f"DEBUG: JSON RETORNADO:")
-    import json
-    print(json.dumps(response, indent=2, default=str))
     
     return response
 

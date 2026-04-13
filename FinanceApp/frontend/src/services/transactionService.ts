@@ -6,8 +6,8 @@ export interface TransactionSummary {
     total_expense: number;
     pending_income: number;
     pending_expense: number;
-    by_category: { name: string; value: number; percentage: number; icon?: string; color?: string; }[];
-    by_category_income: { name: string; value: number; percentage: number; icon?: string; color?: string; }[];
+    by_category: { id: number; name: string; value: number; percentage: number; icon?: string; color?: string; }[];
+    by_category_income: { id: number; name: string; value: number; percentage: number; icon?: string; color?: string; }[];
 }
 
 export interface Transaction {
