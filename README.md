@@ -10,7 +10,8 @@
 | US-02 | 🔴 Alta | 5 pts | Como usuário, quero registrar receitas e despesas informando valor, data, categoria e descrição, para que eu possa controlar todas as minhas movimentações financeiras. | 1 |
 | US-03 | 🔴 Alta | 3 pts | Como usuário, quero visualizar categorias pré-definidas e criar as minhas próprias, para que eu possa organizar melhor os meus gastos. | 1 |
 | US-04 | 🔴 Alta | 3 pts | Como usuário, quero ver na tela inicial meu saldo atual, total de receitas, despesas e valores pendentes do mês, para que eu tenha uma visão rápida da minha situação financeira. | 1 |
-| US-05 | 🔴 Alta | 5 pts | Como usuário, quero listar todas as minhas transações e filtrá-las por período, categoria e tipo, para que eu possa encontrar movimentações específicas com facilidade. | 1 |
+| US-05 | 🔴 Alta    | 5 pts  | 	Como usuário, quero listar todas as minhas transações e filtrá-las por período e tipo, para que eu possa encontrar movimentações específicas com facilidade. | 1 |
+| US-06 | 🔴 Alta    | 3 pts  | Como usuário, quero filtrar transações por categoria, buscar por texto e ordenar por data ou valor, para que eu possa localizar movimentações com ainda mais precisão. | 2 |
 | US-06 | 🔴 Alta | 5 pts | Como usuário, quero que o app diferencie automaticamente transações pagas, pendentes e fixas, para que meu saldo reflita sempre a realidade financeira do mês. | 1 |
 | US-07 | 🔴 Alta | 5 pts | Como usuário, quero fazer login com minha impressão digital ou Face ID, para que eu possa acessar o app de forma rápida e segura sem digitar senha. | 2 |
 | US-08 | 🟡 Média | 3 pts | Como usuário, quero informar minha renda mensal, vencimentos de contas fixas e objetivos financeiros no primeiro acesso, para que o app personalize minha experiência desde o início. | 2 |
