@@ -1,0 +1,25 @@
+# Environment files
+**/venv/
+**/node_modules/
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Build artifacts
+**/dist/
+**/build/
+**/.expo/
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database
+**/*.sqlite3
+**/*.db

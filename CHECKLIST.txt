@@ -1,0 +1,168 @@
+╔════════════════════════════════════════════════════════════════════╗
+║              ✅ CHECKLIST PRÉ-APRESENTAÇÃO ✅                     ║
+╚════════════════════════════════════════════════════════════════════╝
+
+Antes de apresentar o app para sua amiga, verifique tudo isso!
+
+
+📦 INSTALAÇÃO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Descompactei Salva_Amiga.zip
+[ ] Rodei install_all.bat ou bash install_all.sh
+[ ] Não deu erro na instalação
+[ ] PostgreSQL está rodando
+[ ] Node.js instalado (node --version funciona)
+[ ] Python instalado (python --version funciona)
+
+
+⚙️  CONFIGURAÇÕES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Alterei frontend/src/config.ts com meu IP
+[ ] Alterei backend/.env com minha senha PostgreSQL
+[ ] Arquivo backend/.env salvo corretamente
+[ ] Arquivo frontend/src/config.ts salvo corretamente
+
+
+🚀 RODANDO BACKEND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Terminal 1 aberto
+[ ] Executei: cd backend
+[ ] Ativei venv (source venv/bin/activate ou venv\Scripts\activate)
+[ ] Rodei: python main.py
+[ ] Vejo mensagem: "INFO: Uvicorn running on http://0.0.0.0:8000"
+[ ] Backend está respondendo em http://localhost:8000/docs
+
+
+🎨 RODANDO FRONTEND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Terminal 2 aberto
+[ ] Executei: cd frontend
+[ ] Rodei: npm start
+[ ] Vejo QR code ("Metro waiting on...")
+[ ] QR code está visível e escaneável
+
+
+📱 TESTANDO NO CELULAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Expo Go instalado no celular
+[ ] Celular conectado no WiFi (mesma rede do PC)
+[ ] Escaneei o QR code com câmera ou Expo Go
+[ ] App abriu sem erros
+[ ] Página inicial (Home) apareceu
+
+
+🧪 TESTANDO FUNCIONALIDADES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Registro:
+  [ ] Cliquei em "Registrar"
+  [ ] Preenchir com dados de teste:
+      □ Nome: João Silva
+      □ Email: joao@email.com
+      □ CPF: 501.454.998-55 (válido - sem dígitos invisíveis)
+      □ Senha: Teste140* (atende: 8+ chars, 1 maiúscula, 1 número, 1 especial)
+  [ ] Validações funcionam (email inválido, CPF inválido, senha fraca)
+  [ ] Consegui registrar com sucesso
+  [ ] Voltou para home automaticamente
+  [ ] Vejo meu nome no canto
+
+Login:
+  [ ] Cliquei em "Fazer Login"
+  [ ] Digitei email e senha do usuário criado
+  [ ] Consegui fazer login
+  [ ] Voltou para home com meus dados
+
+Transações - Depositar:
+  [ ] Cliquei em "Transações"
+  [ ] Selecionei "Depósito"
+  [ ] Digitei valor (ex: 100.00)
+  [ ] Cliquei "Confirmar"
+  [ ] Apareceu sucesso
+  [ ] Saldo aumentou na home
+
+Transações - Sacar:
+  [ ] Cliquei em "Transações"
+  [ ] Selecionei "Saque"
+  [ ] Digitei valor (ex: 50.00)
+  [ ] Cliquei "Confirmar"
+  [ ] Apareceu sucesso
+  [ ] Saldo diminuiu na home
+
+Transações - Transferência:
+  [ ] (Opcional) Criar outro usuário primeiro
+  [ ] Cliquei em "Transações"
+  [ ] Selecionei "Transferência"
+  [ ] Digitei email do destinatário
+  [ ] Digitei valor
+  [ ] Cliquei "Confirmar"
+  [ ] Apareceu sucesso
+
+Histórico:
+  [ ] Cliquei em "Histórico"
+  [ ] Vejo as transações que fiz
+  [ ] Valores aparecem corretamente
+
+Perfil:
+  [ ] Cliquei em "Perfil"
+  [ ] Vejo meus dados (email, tipo de conta, saldo)
+  [ ] Tem botão de logout
+  [ ] Cliquei logout
+  [ ] Voltou para tela de login
+
+
+🗄️  VERIFICANDO BANCO DE DADOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Terminal 3 (opcional): 
+    PGPASSWORD=sua_senha psql -U postgres -d financeapp
+[ ] Executei: SELECT * FROM accounts;
+[ ] Vejo os usuários que criei
+[ ] Executei: SELECT * FROM transactions;
+[ ] Vejo as transações que fiz
+[ ] Os valores estão corretos
+
+
+📊 PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] App não trava ao registrar
+[ ] App não trava ao fazer login
+[ ] Transações aparecem rapidamente
+[ ] Histórico carrega sem delay
+[ ] Não vejo erros no console do celular
+[ ] Não vejo erros no console do backend
+
+
+📝 DOCUMENTAÇÃO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Li COMECE_AQUI.txt
+[ ] Li CONFIGURACOES_NECESSARIAS.txt
+[ ] Guardo DICAS_IMPORTANTES.txt para referência
+
+
+✨ TUDO FUNCIONANDO?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Se todos os ✅ foram marcados, parabéns! 🎉
+
+Você está pronto para:
+  ✅ Apresentar para sua amiga
+  ✅ Demonstrar todas as funcionalidades
+  ✅ Responder perguntas com confiança
+  ✅ Entregar o código-fonte completo
+  ✅ Explicar como usar e manter
+
+
+❌ ALGUMA COISA NÃO FUNCIONOU?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Veja DICAS_IMPORTANTES.txt para troubleshooting
+
+
+🚀 Bom trabalho! Sucesso na apresentação! 🎉
