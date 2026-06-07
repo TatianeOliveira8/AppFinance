@@ -1,0 +1,9 @@
+# Root gitignore
+.DS_Store
+.env
+__pycache__/
+venv/
+node_modules/
+.expo/
+*.db
+uploads/

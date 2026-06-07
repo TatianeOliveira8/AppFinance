@@ -1,0 +1,16 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Círculo de fundo suave -->
+  <circle cx="100" cy="100" r="90" fill="#FFF4E5" />
+  
+  <!-- Ícone principal (Arrow Up Trend) -->
+  <path 
+    d="M50 140C50 140 65 140 75 125C85 110 80 90 95 90C110 90 115 115 130 115C145 115 155 85 155 85M155 85H135M155 85V105" 
+    stroke="#FF8C00" 
+    stroke-width="12" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+  />
+  
+  <!-- Detalhe da conta -->
+  <circle cx="75" cy="125" r="15" stroke="#FF8C00" stroke-width="8" fill="none" />
+</svg>

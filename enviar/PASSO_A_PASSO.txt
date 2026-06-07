@@ -1,0 +1,80 @@
+FINANCEAPP - GUIA RÁPIDO
+
+1. DESCOMPACTE:
+   Extraia o arquivo Salva_Amiga.zip em uma pasta
+
+2. INSTALE:
+   Abra terminal na pasta extraída (FinanceApp)
+   
+   Windows:
+     install_all.bat
+   
+   Mac/Linux:
+     bash install_all.sh
+   
+   Aguarde 2-5 minutos
+
+3. CONFIGURE:
+   Arquivo: backend/.env (linha 3)
+     DB_PASSWORD=1234
+     ↓ Altere para
+     DB_PASSWORD=sua_senha_postgresql
+   
+   Arquivo: frontend/src/config.ts (linha 7)
+     const API_BASE_URL = 'http://192.168.15.12:8000/api';
+     ↓ Altere para
+     const API_BASE_URL = 'http://SEU_IP_LOCAL:8000/api';
+   
+   Como descobrir seu IP?
+     Windows: ipconfig | procure IPv4 Address
+     Mac: ifconfig | procure inet
+     Linux: hostname -I
+
+4. RODE BACKEND (Terminal 1):
+   cd backend
+   source venv/bin/activate          (Mac/Linux)
+   venv\Scripts\activate.bat         (Windows)
+   python main.py
+   
+   Esperado: "INFO: Uvicorn running on http://0.0.0.0:8000"
+
+5. RODE FRONTEND (Terminal 2):
+   cd frontend
+   npm start
+   
+   Esperado: Aparecerá um QR code
+
+6. TESTE NO CELULAR:
+   Instale Expo Go (App Store / Google Play)
+   Escaneie o QR code que apareceu no Terminal 2
+   Aguarde carregar
+   
+   Dados de teste:
+     Email: joao@email.com
+     CPF: 501.454.998-55
+     Senha: Teste140*
+
+7. FUNCIONALIDADES:
+   - Registrar e fazer login
+   - Depositar dinheiro
+   - Sacar dinheiro
+   - Transferir entre contas
+   - Ver histórico
+   - Dashboard com resumo
+
+✅ FRONTEND TESTADO E FUNCIONANDO:
+   - Login: ✅
+   - Cadastro: ✅
+   - Home Screen: ✅
+   - Transações: ✅
+   - Histórico: ✅
+
+LEIA:
+   - backend/README.md → Detalhes da API
+   - frontend/README.md → Detalhes do app
+   - RELATORIO_LISO_vs_FINANCEAPP.md → Status completo (70% frontend, o que falta)
+
+PROBLEMAS?
+   Leia DICAS_IMPORTANTES.txt
+
+FIM.

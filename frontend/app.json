@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Minhas Finanças",
+    "slug": "financeapp-mobile",
+    "version": "1.0.0",
+    "runtimeVersion": "54.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2196F3"
+    },
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#6200EE"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tati.financeapp"
+    },
+    "android": {
+      "package": "com.tati.financeapp",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2196F3"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-secure-store"
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "774e40db-46d5-4de6-bc4a-e95e70ea06a0"
+      }
+    }
+  }
+}

@@ -1,0 +1,197 @@
+╔════════════════════════════════════════════════════════════════════╗
+║             💡 DICAS IMPORTANTES E TROUBLESHOOTING 💡             ║
+╚════════════════════════════════════════════════════════════════════╝
+
+❌ PROBLEMA: "Connection refused" no celular
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: URL da API está incorreta ou backend não está rodando
+
+Solução:
+  1. Verifique se backend está rodando (Terminal 1 ativo)
+  2. Veja a URL em frontend/src/config.ts
+  3. Confirme que é o IP CORRETO do seu PC
+  4. Celular e PC estão na MESMA REDE WiFi?
+  5. Firewall bloqueando porta 8000?
+     → Windows: Menu Iniciar → Firewall → Allow app
+     → Mac: System Preferences → Security & Privacy
+     → Linux: sudo ufw allow 8000
+
+
+❌ PROBLEMA: "Database connection error"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: PostgreSQL não está rodando ou senha está errada
+
+Solução:
+  1. Inicie PostgreSQL (ele deve estar rodando)
+  2. Verifique a senha em backend/.env
+  3. Teste a conexão:
+     PGPASSWORD=sua_senha psql -U postgres -h localhost
+  4. Se nao conseguir conectar, resete a senha do PostgreSQL
+
+
+❌ PROBLEMA: "Port 8000 already in use"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Outro processo está usando a porta 8000
+
+Solução:
+  WINDOWS:
+    netstat -ano | findstr :8000
+    taskkill /PID <PID> /F
+
+  MAC/LINUX:
+    lsof -i :8000
+    kill -9 <PID>
+
+
+❌ PROBLEMA: "Port 8081 already in use"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Outro processo Expo está rodando
+
+Solução:
+  WINDOWS:
+    taskkill /F /IM node.exe
+
+  MAC/LINUX:
+    pkill -f "expo start"
+
+
+❌ PROBLEMA: "npm install error"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Cache ou versão incorreta do npm
+
+Solução:
+  1. Limpe o cache:
+     npm cache clean --force
+  
+  2. Delete node_modules:
+     rm -rf node_modules (Mac/Linux)
+     rmdir /s node_modules (Windows)
+  
+  3. Delete package-lock.json:
+     rm package-lock.json (Mac/Linux)
+     del package-lock.json (Windows)
+  
+  4. Instale novamente:
+     npm install
+
+
+❌ PROBLEMA: "pip install error"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Virtual environment não ativado ou Python versão errada
+
+Solução:
+  1. Certifique-se que venv está ativado:
+     source venv/bin/activate (Mac/Linux)
+     venv\Scripts\activate.bat (Windows)
+  
+  2. Verifique Python:
+     python --version (deve ser 3.8+)
+  
+  3. Instale requirements:
+     pip install -r requirements.txt
+
+
+❌ PROBLEMA: "Token inválido" / "Não autenticado"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Token expirado ou não foi salvo
+
+Solução:
+  1. Limpe o app no celular:
+     → Fechr Expo Go
+     → Limpar cache (Settings → Apps → Expo Go → Storage → Clear Cache)
+     → Abrir novamente
+  
+  2. Faça login novamente
+  
+  3. Se ainda não funcionar, reinicie backend e frontend
+
+
+❌ PROBLEMA: "QR code não funciona"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Camera do celular bloqueada ou Expo Go não tem permissão
+
+Solução:
+  1. Permissões do Expo Go:
+     Settings → Apps → Expo Go → Permissions → Camera → Allow
+  
+  2. Tente usar a câmera padrão:
+     Escaneie o QR code com app Camera
+  
+  3. Copie a URL do Expo manualmente:
+     Na terminal, aparece algo como exp://192.168...
+     Copie e cole no Expo Go
+
+
+❌ PROBLEMA: "App trava ao registrar"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Validação ou erro no backend
+
+Solução:
+  1. Olhe para o console do backend (Terminal 1)
+  2. Procure por mensagens de erro
+  3. Verifique os dados:
+     - Email válido? (ex: teste@email.com)
+     - CPF válido? (ex: 123.456.789-00)
+     - Senha forte? (min 8 chars, maiúscula, minúscula, número, símbolo)
+  4. Se erro persistir, reinicie backend
+
+
+❌ PROBLEMA: "Transação não apareceu no histórico"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Causa: Transação não foi salva no banco
+
+Solução:
+  1. Verifique se backend respondeu com sucesso
+  2. Veja os logs do backend (Terminal 1)
+  3. Verifique o banco diretamente:
+     SELECT * FROM transactions;
+  4. Se não estiver lá, houve erro ao salvar
+
+
+✅ DICAS GERAIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Sempre verifique os LOGS no console do backend
+   Eles mostram exatamente qual é o problema
+
+2. Use dados de teste válidos:
+   Email: teste@email.com
+   CPF: 123.456.789-00
+   Senha: Senha@123
+
+3. Se algo falhar, REINICIE:
+   - Ctrl+C no Terminal 1 (Backend)
+   - Ctrl+C no Terminal 2 (Frontend)
+   - Rode novamente
+
+4. Limpe caches periodicamente:
+   Frontend: rm -rf .expo
+   Backend: rm -rf __pycache__
+
+5. Mantenha Backend + Frontend SEMPRE rodando
+   Se um deles cair, o outro fica sem funcionar
+
+
+❓ PRECISA DE MAIS AJUDA?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Volte ao arquivo CONFIGURACOES_NECESSARIAS.txt
+2. Abra a documentação completa descompactando Salva_Amiga.zip:
+   → AJUSTES.md
+   → README_INSTALACAO.md
+   → MAPA_CONFIGURACOES.md
+
+3. Verifique CHECKLIST.txt para garantir tudo foi feito
+
+
+🎉 Se conseguir passar por tudo isso, seu app está PERFEITO!

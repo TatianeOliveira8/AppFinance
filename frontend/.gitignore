@@ -1,0 +1,83 @@
+# Node Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.*.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# React Native / Expo
+.expo/
+.expo-shared/
+dist/
+build/
+.gradle/
+android/
+ios/
+dist-ssr/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Cache
+.cache/
+.eslintcache
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.bak
+*.temp
+*~
+
+# Package manager lock files (optional - uncomment if using only one)
+# package-lock.json
+# yarn.lock
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.turboignore
+.env.build
+.Bundle
+*.jks
+*.p12
+*.cer
+*.mobileprovision
+*.orig.*
+
+# EAS
+.eas/
+eas.json.local
+
+# Debugging
+.vscode/launch.json
+.vscode/settings.json
+.vscode/extensions.json
