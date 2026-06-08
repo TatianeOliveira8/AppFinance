@@ -244,7 +244,9 @@ class AnnualExpense(Base):
     is_paid = Column(Boolean, default=False)
     notes = Column(String, nullable=True)
     alert_days_before = Column(Integer, default=30)  # Dias antes para alertar
+    alert_time = Column(String, default="10:00")  # Horário do alerta
     created_at = Column(DateTime, default=datetime.utcnow)
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
     
     user = relationship("User")
 

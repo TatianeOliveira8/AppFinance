@@ -16,13 +16,13 @@ import { useTheme } from '../context/ThemeContext';
 import { expenseGroupsService, ExpenseGroup } from '../services/expenseGroupsService';
 import api from '../services/api';
 
-export default function ExpenseGroupsScreen({ navigation }: any) {
+export default function ExpenseGroupsScreen({ navigation, route }: any) {
   const { colors } = useTheme();
   const themeColor = colors.accent;
 
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<ExpenseGroup[]>([]);
-  
+
   // Create Group Modal states
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -33,6 +33,15 @@ export default function ExpenseGroupsScreen({ navigation }: any) {
   useEffect(() => {
     loadGroups();
   }, []);
+
+  // Recarregar grupos quando retornar da tela de detalhes (após deletar, etc)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadGroups();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const loadGroups = async () => {
     setLoading(true);
@@ -64,7 +73,15 @@ export default function ExpenseGroupsScreen({ navigation }: any) {
       setMembersList([...membersList, { name: userData.full_name, email: userData.email }]);
       setMemberEmail('');
     } catch (e: any) {
-      const errorMsg = e.response?.data?.detail || 'Não foi possível encontrar o usuário. Certifique-se de que ele tem o app instalado.';
+      const statusCode = e.response?.status;
+      let errorMsg = 'Erro ao verificar o usuário.';
+
+      if (statusCode === 404) {
+        errorMsg = '⚠️ Usuário sem conta cadastrada\n\nEste e-mail não está registrado no aplicativo. O participante precisa instalar o app e criar uma conta primeiro.';
+      } else {
+        errorMsg = e.response?.data?.detail || 'Não foi possível encontrar o usuário. Certifique-se de que ele tem o app instalado.';
+      }
+
       Alert.alert('Erro', errorMsg);
     }
   };
@@ -76,6 +93,11 @@ export default function ExpenseGroupsScreen({ navigation }: any) {
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
       Alert.alert('Aviso', 'Preencha o nome do grupo.');
+      return;
+    }
+    // Validação: deve ter pelo menos 1 participante adicional
+    if (membersList.length === 0) {
+      Alert.alert('Aviso', 'Adicione pelo menos um participante para criar o grupo.');
       return;
     }
     try {
@@ -255,7 +277,7 @@ const styles = StyleSheet.create({
   groupInfo: { flexDirection: 'row', alignItems: 'center', gap: 15 },
   iconCircle: { width: 50, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   groupName: { fontSize: 16, fontWeight: 'bold' },
-  
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 24, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },

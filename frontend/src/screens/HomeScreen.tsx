@@ -24,6 +24,7 @@ import { CategoryBar } from '../components/CategoryBar';
 import { CategoryDetailsModal } from '../components/CategoryDetailsModal';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { FinancialTipsCard } from '../components/FinancialTipsCard';
+import { AnomalyAlertCard } from '../components/AnomalyAlertCard';
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
@@ -37,6 +38,19 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [dailyFlowData, setDailyFlowData] = useState<{ day: number; label: string; income: number; expense: number; balance: number; }[]>([]);
   const { colors } = useTheme();
   const { isOnline, syncing } = useOffline();
+
+  const [educationalTip, setEducationalTip] = useState('');
+
+  useEffect(() => {
+    const tips = [
+      "Que tal criar uma meta de emergência para imprevistos?",
+      "Sabia que parcelar muitas compras pode comprometer sua renda dos próximos meses?",
+      "Revisar e cancelar assinaturas que você não usa pode liberar um bom dinheiro!",
+      "Investir uma pequena porcentagem do seu salário é o primeiro passo para o futuro.",
+      "Seus gastos com lazer estão dentro do planejado? É sempre bom checar!"
+    ];
+    setEducationalTip(tips[Math.floor(Math.random() * tips.length)]);
+  }, []);
 
   // Dynamic Tab Height with safety fallback
   let tabBarHeight = 0;
@@ -71,6 +85,11 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         currentDate.getFullYear()
       );
       setSummary(data);
+
+      // Pré-carrega todas as transações em background para garantir que a consulta offline funcione
+      if (isOnline) {
+        transactionService.getTransactions().catch(() => {});
+      }
 
       // RF18: Carregar alertas de gastos anormais (falha silenciosa)
       const alertsData = await transactionService.getSpendingAlerts(
@@ -168,7 +187,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       {!isOnline && (
         <View style={[styles.offlineBar, { backgroundColor: '#FF9800' }]}>
           <Icon name="wifi-off" size={16} color="#FFF" />
-          <Text style={styles.offlineText}>Você está offline. Alterações serão salvas localmente.</Text>
+          <Text style={styles.offlineText}>Você está offline.</Text>
         </View>
       )}
       {syncing && (
@@ -203,6 +222,11 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         expensePendingList={summary?.expense_pending_list || []}
       />
 
+      {/* REQ 29 - DICAS FINANCEIRAS DINÂMICAS */}
+      {summary && (
+        <FinancialTipsCard summary={summary} />
+      )}
+
       {summary && (
         <DashboardCharts
           pieData={summary.by_category.map(c => ({ name: c.name, value: c.value, color: c.color }))}
@@ -211,9 +235,10 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         />
       )}
 
-      {/* REQ 29 - DICAS FINANCEIRAS */}
-      {summary && (
-        <FinancialTipsCard summary={summary} />
+
+      {/* ALERTAS DE GASTOS ANORMAIS (MÉDIA DE 3 MESES) */}
+      {anomalyAlerts && anomalyAlerts.length > 0 && (
+        <AnomalyAlertCard alerts={anomalyAlerts} />
       )}
 
       {/* AÇÕES RÁPIDAS UNIFICADAS (ESTILO PROFISSIONAL) */}
@@ -279,7 +304,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               categoryId={cat.id}
               isDefault={cat.isDefault}
               budgetLimit={cat.budget_limit}
-              anomalyAlert={anomalyAlerts?.find((a: any) => a.category_name.toLowerCase() === cat.name.toLowerCase())}
               onPress={handleCategoryPress}
             />
           ))

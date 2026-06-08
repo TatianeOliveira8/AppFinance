@@ -160,6 +160,50 @@ export const notificationService = {
     return scheduledIds;
   },
 
+  async scheduleAnnualExpenseReminder(
+    title: string,
+    value: string,
+    dueDate: Date,
+    daysBefore: number,
+    chosenTime: Date,
+    expenseId: number
+  ): Promise<string[]> {
+    if (Platform.OS === 'web') return [];
+
+    const now = new Date();
+    const scheduledIds: string[] = [];
+
+    const targetHours = chosenTime.getHours();
+    const targetMinutes = chosenTime.getMinutes();
+
+    const reminderCustom = new Date(dueDate);
+    reminderCustom.setDate(reminderCustom.getDate() - daysBefore);
+    reminderCustom.setHours(targetHours, targetMinutes, 0, 0);
+
+    if (reminderCustom > now) {
+      try {
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '⚠️ Despesa Anual se Aproximando!',
+            body: `A despesa "${title}" de R$ ${value} vence em ${daysBefore} dias. Reserve o dinheiro!`,
+            data: { expenseId },
+            sound: true,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: reminderCustom,
+            channelId: 'default',
+          },
+        });
+        scheduledIds.push(id);
+        console.log(`[Notificação] Lembrete Anual agendado para: ${reminderCustom.toLocaleString('pt-BR')}`);
+      } catch (err) {
+        console.warn('[Notificação] Falha ao agendar aviso anual:', err);
+      }
+    }
+    return scheduledIds;
+  },
+
   /**
    * Cancela todos os lembretes agendados para uma transação específica.
    */

@@ -13,11 +13,6 @@ interface CategoryBarProps {
     categoryId?: number;
     isDefault?: boolean;
     budgetLimit?: number;
-    anomalyAlert?: {
-        severity: 'warning' | 'critical';
-        increase_pct: number;
-        avg_last_3_months: number;
-    } | null;
     onPress?: (categoryId: number, categoryName: string, isDefault?: boolean) => void;
 }
 
@@ -30,7 +25,6 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
     categoryId,
     isDefault,
     budgetLimit,
-    anomalyAlert,
     onPress
 }) => {
     const themeColor = color || '#FF8C00';
@@ -52,12 +46,10 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
     const displayPercentage = budgetLimit && budgetLimit > 0 
         ? (value / budgetLimit) * 100 
-        : (anomalyAlert && anomalyAlert.avg_last_3_months > 0 
-            ? (value / anomalyAlert.avg_last_3_months) * 100 
-            : percentage);
+        : percentage;
 
-    const isExceeded = (budgetLimit && value > budgetLimit) || (anomalyAlert?.severity === 'critical');
-    const isNearLimit = (budgetLimit && !isExceeded && displayPercentage >= 80) || (anomalyAlert?.severity === 'warning');
+    const isExceeded = (budgetLimit && value > budgetLimit);
+    const isNearLimit = (budgetLimit && !isExceeded && displayPercentage >= 80);
 
     let barColor = themeColor;
     if (isExceeded) {
@@ -75,7 +67,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
     const limitLabel = budgetLimit 
         ? `Limite: ${formatCurrency(budgetLimit)}` 
-        : (anomalyAlert ? `Média: ${formatCurrency(anomalyAlert.avg_last_3_months)}` : '');
+        : '';
 
     return (
         <TouchableOpacity
@@ -103,7 +95,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                         ]}
                     />
                 </View>
-                {(budgetLimit || anomalyAlert) ? (
+                {budgetLimit ? (
                     <View style={styles.limitInfo}>
                         <Text style={[styles.limitText, { color: limitTextColor }]}>
                             {limitLabel}

@@ -9,6 +9,7 @@ export interface AnnualExpense {
     is_paid: boolean;
     notes?: string;
     alert_days_before: number;
+    alert_time?: string;
     created_at: string;
 }
 

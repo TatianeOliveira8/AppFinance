@@ -1,0 +1,72 @@
+ID,Data,Tipo,Valor,Descrição,Pago,Fixo,Categoria,Método de Pagamento,Contato,Endereço
+3,2026-04-13,expense,10.0,Despesa,Sim,Não,Moradia,,,
+7,2026-04-16,expense,200.0,Despesa,Não,Não,Moradia,,,
+11,2026-04-13,income,1000.0,Receita,Não,Sim,Salário,,,
+16,2026-04-13,expense,200.0,Despesa,Sim,Não,,,,
+17,2026-04-13,income,100.0,Receita,Sim,Não,,,,
+19,2026-04-13,income,500.0,Receita,Sim,Não,,,,
+21,2026-04-13,income,500.0,Receita,Sim,Não,Salário,,,
+24,2026-04-13,income,200.0,Receita,Não,Não,,,,
+25,2026-04-13,income,200.0,Receita,Sim,Não,,,,
+26,2026-04-17,income,100.0,Receita,Não,Não,Empréstimo,,,
+27,2026-04-13,income,10000.0,Receita,Sim,Não,Test,,,
+28,2026-04-17,income,20000.0,Receita,Não,Não,Empréstimo,,,
+29,2026-04-13,expense,10000.0,Despesa,Sim,Não,,,,
+30,2026-04-13,income,20000.0,Receita,Sim,Não,Salário,,,
+31,2026-04-13,income,100.0,Receita,Não,Sim,Renda Extra,,,
+32,2026-04-13,income,200.0,Receita,Sim,Não,,,,
+33,2026-04-13,expense,200.0,Despesa,Sim,Não,Lazer,,,
+34,2026-04-13,income,200.0,Receita,Sim,Não,,,,
+35,2026-04-13,income,2000.0,Receita,Não,Sim,Trabalho ,,,
+36,2026-04-13,income,2000.0,Receita,Sim,Não,,,,
+37,2026-04-13,expense,50.0,Despesa,Não,Sim,Saúde,,,
+38,2026-04-13,income,200.0,Receita,Sim,Não,,,,
+39,2026-04-13,income,500.0,Receita,Sim,Não,Trabalho ,,,
+40,2026-04-13,income,1000.0,Receita,Sim,Não,,,,
+41,2026-04-20,income,1000.0,Receita,Não,Não,Salário,,,
+42,2026-04-13,expense,200.0,Despesa,Sim,Não,Saúde,,,
+43,2026-04-13,income,200.0,Receita,Sim,Não,Investimento ,,,
+44,2026-04-13,expense,200.0,Despesa,Sim,Não,Pet,,,
+67,2026-05-11,expense,50.0,Despesa (1/2),Não,Não,Moradia,credito,,
+68,2026-06-11,expense,50.0,Despesa (2/2),Não,Não,Moradia,credito,,
+75,2026-05-11,expense,100.0,Despesa,Sim,Não,Saúde,dinheiro,,
+77,2026-05-11,income,2000.0,Transferência de nubank,Sim,Não,,,,
+78,2026-05-11,expense,100.0,alguel,Sim,Não,,,,
+79,2026-05-11,income,100.0,Transferência de Itaú,Sim,Não,,,,
+80,2026-05-11,expense,200.0,aluguel,Sim,Não,,,,
+81,2026-05-11,income,200.0,Transferência de nubank,Sim,Não,,,,
+82,2026-05-11,income,75.0,Receita (1/2),Sim,Não,Salário,credito,,", R. Celso Paiotti, 1350 - São José dos Campos"
+83,2026-06-11,income,75.0,Receita (2/2),Não,Não,Salário,credito,,", R. Celso Paiotti, 1350 - São José dos Campos"
+84,2026-07-10,expense,50.0,Despesa (1/2),Não,Não,Moradia,credito,,
+85,2026-08-10,expense,50.0,Despesa (2/2),Não,Não,Moradia,credito,,
+86,2026-05-11,expense,200.0,Transferência entre contas,Sim,Não,,,,
+87,2026-05-11,income,200.0,Transferência de Itaú,Sim,Não,,,,
+88,2026-05-11,expense,100.0,Despesa,Sim,Não,Moradia,,,", R. Celso Paiotti, 1350 - São José dos Campos"
+89,2026-05-11,expense,1000.0,Transferência entre contas,Sim,Não,,,,
+90,2026-05-11,income,1000.0,Transferência de Itaú,Sim,Não,,,,
+91,2026-05-11,expense,300.0,Transferência entre contas,Sim,Não,,,,
+92,2026-05-11,income,300.0,Transferência de Itaú,Sim,Não,,,,
+93,2026-08-11,expense,250.0,Despesa (1/2),Não,Não,Moradia,credito,,", R. Celso Paiotti, 1350 - São José dos Campos"
+94,2026-09-11,expense,250.0,Despesa (2/2),Não,Não,Moradia,credito,,", R. Celso Paiotti, 1350 - São José dos Campos"
+95,2026-05-29,expense,10.0,Despesa,Sim,Não,Moradia,,,", R. Celso Paiotti, 1350 - São José dos Campos"
+96,2026-05-29,expense,100.0,Despesa,Sim,Não,Moradia,,,"José Bonifácio, 87 - Pindamonhangaba"
+97,2026-05-31,expense,10.0,Transferência entre contas,Sim,Não,,,,
+98,2026-05-31,income,10.0,Transferência de Banco do brasil,Sim,Não,,,,
+99,2026-05-31,income,5.0,Receita,Sim,Não,Salário,,,"José Bonifácio, 87 - Pindamonhangaba"
+100,2026-05-31,income,5.0,Receita,Sim,Não,Salário,,,"José Bonifácio, 87 - Pindamonhangaba"
+101,2026-06-01,expense,1.0,Despesa,Sim,Não,Moradia,,null null,"José Bonifácio, 87 - Pindamonhangaba"
+102,2026-06-01,expense,10.0,Despesa,Sim,Não,Moradia,,Agendamento,"José Bonifácio, 87 - Pindamonhangaba"
+103,2026-06-01,expense,1.0,Despesa,Não,Não,Moradia,,,"José Bonifácio, 87 - Pindamonhangaba"
+104,2026-06-01,expense,1.0,Despesa,Não,Não,Moradia,,,"José Bonifácio, 87 - Pindamonhangaba"
+105,2026-06-01,expense,10.0,Despesa,Não,Não,Moradia,,,"José Bonifácio, 87 - Pindamonhangaba"
+106,2026-06-05,income,100.0,Renda extra,Sim,Não,Renda Extra,dinheiro,,"José Bonifácio, 87 - Pindamonhangaba"
+110,2026-06-05,expense,1500.0,.,Sim,Não,Saúde,,,"José Bonifácio, 87 - Pindamonhangaba"
+111,2026-06-05,expense,400.0,Hospital,Sim,Não,Saúde,,,"José Bonifácio, 87 - Pindamonhangaba"
+112,2026-06-06,expense,100.0,Comida,Não,Não,Moradia,,,"José Bonifácio, 87 - Pindamonhangaba"
+113,2026-07-05,expense,100.0,G,Não,Não,Moradia,,,"José Bonifácio, 87 - Pindamonhangaba"
+115,2026-06-06,income,15000.0,Teste,Sim,Não,Salário,dinheiro,,"José Bonifácio, 87 - Pindamonhangaba"
+116,2026-06-06,expense,1000.0,Ghh,Sim,Não,Pet,credito,,"José Bonifácio, 87 - Pindamonhangaba"
+117,2026-06-06,expense,100.0,Ggb,Sim,Não,Pet,credito,,"José Bonifácio, 87 - Pindamonhangaba"
+118,2026-06-08,expense,10.0,T,Não,Não,Moradia,,,"José Bonifácio, 87 - Pindamonhangaba"
+119,2026-06-07,expense,200.0,Aplicação: Nubank,Sim,Não,Investimentos,,,
+120,2026-06-07,expense,100.0,[Despesa Anual] teste,Sim,Não,,,,

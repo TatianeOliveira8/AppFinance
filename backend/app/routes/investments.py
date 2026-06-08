@@ -14,7 +14,28 @@ def get_investments(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    return db.query(Investment).filter(Investment.user_id == user_id).all()
+    investments = db.query(Investment).filter(Investment.user_id == user_id).all()
+    
+    now = datetime.utcnow()
+    updated_any = False
+    for inv in investments:
+        if inv.annual_rate and inv.annual_rate > 0 and inv.start_date:
+            start_date_naive = inv.start_date.replace(tzinfo=None) if hasattr(inv.start_date, 'tzinfo') else inv.start_date
+            days_passed = (now - start_date_naive).days
+            if days_passed > 0:
+                # Cálculo de Juros Compostos: Montante = Principal * (1 + TaxaAnual)^(Dias/365)
+                calculated_value = inv.invested_value * ((1 + inv.annual_rate / 100) ** (days_passed / 365.0))
+                calculated_value = round(calculated_value, 2)
+                
+                # Só atualiza se o rendimento matemático for maior que o registrado (preserva aportes manuais maiores)
+                if calculated_value > inv.current_value:
+                    inv.current_value = calculated_value
+                    updated_any = True
+
+    if updated_any:
+        db.commit()
+        
+    return investments
 
 @router.post("/", response_model=InvestmentResponse)
 def create_investment(

@@ -17,6 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { transactionService } from '../services/transactionService';
 import { investmentsService, Investment } from '../services/investmentsService';
 import { annualExpensesService, AnnualExpense } from '../services/annualExpensesService';
+import { notificationService } from '../services/notificationService';
 import { formatDate, formatCurrency } from '../utils/helpers';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -45,6 +46,7 @@ export default function FinancialPlanningScreen({ navigation }: any) {
   const [showInvDatePicker, setShowInvDatePicker] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+  const [editingInvId, setEditingInvId] = useState<number | null>(null);
 
   const formatToCurrency = (val: string) => {
     let cleanVal = val.replace(/\D/g, '');
@@ -56,12 +58,19 @@ export default function FinancialPlanningScreen({ navigation }: any) {
   // States for Annual Planning
   const [annualExpenses, setAnnualExpenses] = useState<AnnualExpense[]>([]);
   const [aeModalVisible, setAeModalVisible] = useState(false);
+  const [editingAeId, setEditingAeId] = useState<number | null>(null);
   const [aeName, setAeName] = useState('');
   const [aeValue, setAeValue] = useState('');
   const [aeNotes, setAeNotes] = useState('');
   const [aeAlertDays, setAeAlertDays] = useState('30');
   const [aeDate, setAeDate] = useState(new Date());
+  const [aeAlertTime, setAeAlertTime] = useState(() => {
+    const d = new Date();
+    d.setHours(10, 0, 0, 0);
+    return d;
+  });
   const [showAeDatePicker, setShowAeDatePicker] = useState(false);
+  const [showAeTimePicker, setShowAeTimePicker] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -102,7 +111,7 @@ export default function FinancialPlanningScreen({ navigation }: any) {
       const cleanInvValue = parseFloat(invValue.replace(/\./g, '').replace(',', '.'));
       const cleanInvCurrent = parseFloat(invCurrent.replace(/\./g, '').replace(',', '.'));
 
-      await investmentsService.createInvestment({
+      const payload = {
         name: invName,
         type: invType,
         invested_value: cleanInvValue,
@@ -112,19 +121,27 @@ export default function FinancialPlanningScreen({ navigation }: any) {
         notes: invNotes,
         start_date: invDate.toISOString(),
         account_id: selectedAccountId || undefined
-      });
-      Alert.alert('Sucesso', 'Investimento registrado!');
+      };
+
+      if (editingInvId) {
+        await investmentsService.updateInvestment(editingInvId, payload);
+        Alert.alert('Sucesso', 'Investimento atualizado!');
+      } else {
+        await investmentsService.createInvestment(payload);
+        Alert.alert('Sucesso', 'Investimento registrado!');
+      }
       setInvModalVisible(false);
       resetInvFields();
       loadData();
     } catch (e) {
-      Alert.alert('Erro', 'Não foi possível registrar o investimento.');
+      Alert.alert('Erro', 'Não foi possível salvar o investimento.');
     }
   };
 
   const resetInvFields = () => {
+    setEditingInvId(null);
     setInvName('');
-    setInvType('CDB');
+    setInvType('CDB/Renda Fixa');
     setInvValue('');
     setInvCurrent('');
     setInvRate('');
@@ -132,6 +149,36 @@ export default function FinancialPlanningScreen({ navigation }: any) {
     setInvNotes('');
     setInvDate(new Date());
     setSelectedAccountId(null);
+  };
+
+  const openEditAnnualExpense = (ae: AnnualExpense) => {
+    setEditingAeId(ae.id);
+    setAeName(ae.name);
+    setAeValue(formatToCurrency(ae.estimated_value.toFixed(2).replace('.', '')));
+    setAeNotes(ae.notes || '');
+    setAeAlertDays(ae.alert_days_before.toString());
+    setAeDate(new Date(ae.due_date));
+    if (ae.alert_time) {
+        const d = new Date();
+        const [h, m] = ae.alert_time.split(':');
+        d.setHours(parseInt(h), parseInt(m), 0, 0);
+        setAeAlertTime(d);
+    }
+    setAeModalVisible(true);
+  };
+
+  const openEditInvestment = (inv: Investment) => {
+    setEditingInvId(inv.id);
+    setInvName(inv.name);
+    setInvType(inv.type);
+    setInvValue(formatToCurrency(inv.invested_value.toFixed(2).replace('.', '')));
+    setInvCurrent(formatToCurrency(inv.current_value.toFixed(2).replace('.', '')));
+    setInvRate(inv.annual_rate ? inv.annual_rate.toString().replace('.', ',') : '');
+    setInvInstitution(inv.institution || '');
+    setInvNotes(inv.notes || '');
+    setInvDate(new Date(inv.start_date));
+    setSelectedAccountId(inv.account_id || null);
+    setInvModalVisible(true);
   };
 
   const handleCreateAnnualExpense = async () => {
@@ -142,15 +189,39 @@ export default function FinancialPlanningScreen({ navigation }: any) {
     try {
       const cleanAeValue = parseFloat(aeValue.replace(/\./g, '').replace(',', '.'));
 
-      await annualExpensesService.createAnnualExpense({
-        name: aeName,
-        estimated_value: cleanAeValue,
-        due_date: aeDate.toISOString(),
-        alert_days_before: parseInt(aeAlertDays) || 30,
-        notes: aeNotes,
-        is_paid: false
-      });
-      Alert.alert('Sucesso', 'Despesa anual planejada!');
+      if (editingAeId) {
+        await annualExpensesService.updateAnnualExpense(editingAeId, {
+          name: aeName,
+          estimated_value: cleanAeValue,
+          due_date: aeDate.toISOString(),
+          alert_days_before: parseInt(aeAlertDays) || 30,
+          alert_time: aeAlertTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          notes: aeNotes
+        });
+        Alert.alert('Sucesso', 'Despesa atualizada!');
+      } else {
+        const created = await annualExpensesService.createAnnualExpense({
+          name: aeName,
+          estimated_value: cleanAeValue,
+          due_date: aeDate.toISOString(),
+          alert_days_before: parseInt(aeAlertDays) || 30,
+          alert_time: aeAlertTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          notes: aeNotes,
+          is_paid: false
+        });
+        
+        // Agendar notificação
+        await notificationService.scheduleAnnualExpenseReminder(
+            created.name,
+            formatToCurrency(created.estimated_value.toFixed(2).replace('.', '')),
+            new Date(created.due_date),
+            created.alert_days_before,
+            aeAlertTime,
+            created.id
+        );
+
+        Alert.alert('Sucesso', 'Despesa anual planejada e alerta ativado!');
+      }
       setAeModalVisible(false);
       setAeName('');
       setAeValue('');
@@ -260,30 +331,34 @@ export default function FinancialPlanningScreen({ navigation }: any) {
           {activeTab === 'patrimonio' && netWorth && (
             <View style={styles.sectionContainer}>
               {/* CARD PRINCIPAL */}
-              <View style={[styles.netWorthCard, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.cardLabel, { color: colors.textMuted }]}>PATRIMÔNIO LÍQUIDO TOTAL</Text>
-                <Text style={[styles.netWorthValue, { color: netWorth.net_worth >= 0 ? '#2E7D32' : '#C62828' }]}>
-                  {formatCurrency(netWorth.net_worth)}
-                </Text>
-                <View style={styles.divider} />
-                <View style={styles.rowItem}>
-                  <View style={styles.rowIconLabel}>
-                    <Icon name="plus-circle-outline" size={20} color="#2E7D32" />
-                    <Text style={[styles.rowText, { color: colors.text }]}>Total de Ativos</Text>
-                  </View>
-                  <Text style={[styles.rowValue, { color: '#2E7D32' }]}>{formatCurrency(netWorth.total_assets)}</Text>
+              <View style={[styles.netWorthCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                  <Text style={[styles.cardLabel, { color: colors.textMuted }]}>PATRIMÔNIO LÍQUIDO TOTAL</Text>
+                  <Text style={[styles.netWorthValue, { color: netWorth.net_worth >= 0 ? '#4CAF50' : '#F44336' }]}>
+                    {formatCurrency(netWorth.net_worth)}
+                  </Text>
                 </View>
-                <View style={styles.rowItem}>
-                  <View style={styles.rowIconLabel}>
-                    <Icon name="minus-circle-outline" size={20} color="#C62828" />
-                    <Text style={[styles.rowText, { color: colors.text }]}>Total de Passivos</Text>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 15 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 }}>Ativos</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#4CAF50' }}>{formatCurrency(netWorth.total_assets)}</Text>
                   </View>
-                  <Text style={[styles.rowValue, { color: '#C62828' }]}>{formatCurrency(netWorth.total_liabilities)}</Text>
+                  <View style={{ width: 1, backgroundColor: colors.border, marginHorizontal: 15 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 }}>Passivos</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#F44336' }}>{formatCurrency(netWorth.total_liabilities)}</Text>
+                  </View>
                 </View>
               </View>
 
               {/* ATIVOS */}
-              <Text style={[styles.subSectionTitle, { color: colors.text }]}>🟢 Ativos</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 15, marginBottom: 5 }}>
+                <View style={{ backgroundColor: '#4CAF5015', padding: 4, borderRadius: 10 }}>
+                  <Icon name="arrow-up-circle" size={20} color="#4CAF50" />
+                </View>
+                <Text style={[styles.subSectionTitle, { color: colors.text, marginTop: 0 }]}>Ativos</Text>
+              </View>
 
               {/* Contas Bancárias */}
               <View style={[styles.detailCard, { backgroundColor: colors.surface }]}>
@@ -332,7 +407,12 @@ export default function FinancialPlanningScreen({ navigation }: any) {
               </View>
 
               {/* PASSIVOS */}
-              <Text style={[styles.subSectionTitle, { color: colors.text }]}>🔴 Passivos</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 15, marginBottom: 5 }}>
+                <View style={{ backgroundColor: '#F4433615', padding: 4, borderRadius: 10 }}>
+                  <Icon name="arrow-down-circle" size={20} color="#F44336" />
+                </View>
+                <Text style={[styles.subSectionTitle, { color: colors.text, marginTop: 0 }]}>Passivos</Text>
+              </View>
 
               <View style={[styles.detailCard, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.detailGroupLabel, { color: colors.textMuted }]}>DÍVIDAS E OBRIGAÇÕES</Text>
@@ -433,16 +513,22 @@ export default function FinancialPlanningScreen({ navigation }: any) {
                   const gain = inv.current_value - inv.invested_value;
                   const pct = inv.invested_value > 0 ? (gain / inv.invested_value) * 100 : 0;
                   return (
-                    <View key={inv.id} style={[styles.investmentCard, { backgroundColor: colors.surface }]}>
+                    <TouchableOpacity
+                      key={inv.id}
+                      style={[styles.investmentCard, { backgroundColor: colors.surface }]}
+                      onPress={() => openEditInvestment(inv)}
+                      activeOpacity={0.7}
+                    >
                       <View style={styles.cardHeader}>
-                        <View>
-                          <Text style={[styles.invTitle, { color: colors.text }]}>{inv.name}</Text>
-                          <Text style={{ fontSize: 11, color: colors.textMuted }}>{inv.type} | {inv.institution || 'Outro'}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.invTitle, { color: colors.text }]} numberOfLines={1}>{inv.name}</Text>
+                          <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{inv.type} | {inv.institution || 'Outro'}</Text>
                         </View>
-                        <TouchableOpacity onPress={() => deleteInvestmentItem(inv.id)}>
-                          <Icon name="delete-outline" size={20} color="#C62828" />
+                        <TouchableOpacity onPress={() => deleteInvestmentItem(inv.id)} style={{ padding: 5, marginLeft: 10 }}>
+                          <Icon name="delete-outline" size={22} color="#C62828" />
                         </TouchableOpacity>
                       </View>
+                      <View style={[styles.divider, { marginVertical: 12, opacity: 0.5 }]} />
                       <View style={styles.invValuesRow}>
                         <View>
                           <Text style={styles.valSubLabel}>Investido</Text>
@@ -450,16 +536,18 @@ export default function FinancialPlanningScreen({ navigation }: any) {
                         </View>
                         <View>
                           <Text style={styles.valSubLabel}>Atual</Text>
-                          <Text style={[styles.valLabel, { color: colors.text }]}>{formatCurrency(inv.current_value)}</Text>
+                          <Text style={[styles.valLabel, { color: colors.text, fontWeight: 'bold' }]}>{formatCurrency(inv.current_value)}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                           <Text style={styles.valSubLabel}>Rendimento</Text>
-                          <Text style={[styles.valLabel, { color: gain >= 0 ? '#2E7D32' : '#C62828', fontWeight: 'bold' }]}>
-                            {pct >= 0 ? '+' : ''}{pct.toFixed(2)}%
-                          </Text>
+                          <View style={{ backgroundColor: gain >= 0 ? '#4CAF5015' : '#F4433615', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 2 }}>
+                            <Text style={[styles.valLabel, { color: gain >= 0 ? '#4CAF50' : '#F44336', fontWeight: '900', fontSize: 13 }]}>
+                              {pct >= 0 ? '+' : ''}{pct.toFixed(2)}%
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   );
                 })
               )}
@@ -471,7 +559,15 @@ export default function FinancialPlanningScreen({ navigation }: any) {
             <View style={styles.sectionContainer}>
               <TouchableOpacity
                 style={[styles.addBtn, { backgroundColor: themeColor }]}
-                onPress={() => setAeModalVisible(true)}
+                onPress={() => {
+                  setEditingAeId(null);
+                  setAeName('');
+                  setAeValue('');
+                  setAeNotes('');
+                  setAeAlertDays('30');
+                  setAeDate(new Date());
+                  setAeModalVisible(true);
+                }}
               >
                 <Icon name="plus" size={20} color="#FFF" />
                 <Text style={styles.addBtnText}>Planejar Despesa</Text>
@@ -484,38 +580,46 @@ export default function FinancialPlanningScreen({ navigation }: any) {
                 </View>
               ) : (
                 annualExpenses.map((ae) => (
-                  <View key={ae.id} style={[styles.annualCard, { backgroundColor: colors.surface }]}>
+                  <TouchableOpacity 
+                    key={ae.id} 
+                    style={[styles.annualCard, { backgroundColor: colors.surface }]}
+                    activeOpacity={0.7}
+                    onPress={() => openEditAnnualExpense(ae)}
+                  >
                     <View style={styles.cardHeader}>
-                      <View>
-                        <Text style={[styles.aeTitle, { color: colors.text, textDecorationLine: ae.is_paid ? 'line-through' : 'none' }]}>{ae.name}</Text>
-                        <Text style={{ fontSize: 11, color: colors.textMuted }}>Vence em: {formatDate(ae.due_date)}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.aeTitle, { color: colors.text, textDecorationLine: ae.is_paid ? 'line-through' : 'none' }]} numberOfLines={1}>
+                          {ae.name}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Vence em: {formatDate(ae.due_date)}</Text>
                       </View>
-                      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                        <TouchableOpacity onPress={() => toggleAePaid(ae)}>
+                      <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => toggleAePaid(ae)} style={{ padding: 5 }}>
                           <Icon
-                            name={ae.is_paid ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+                            name={ae.is_paid ? "check-circle" : "checkbox-blank-circle-outline"}
                             size={24}
-                            color={ae.is_paid ? '#2E7D32' : colors.textMuted}
+                            color={ae.is_paid ? '#4CAF50' : colors.border}
                           />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => deleteAnnualExpenseItem(ae.id)}>
-                          <Icon name="delete-outline" size={20} color="#C62828" />
+                        <TouchableOpacity onPress={() => deleteAnnualExpenseItem(ae.id)} style={{ padding: 5 }}>
+                          <Icon name="delete-outline" size={22} color="#F44336" />
                         </TouchableOpacity>
                       </View>
                     </View>
+                    <View style={[styles.divider, { marginVertical: 12, opacity: 0.5 }]} />
                     <View style={styles.aeValuesRow}>
                       <View>
                         <Text style={styles.valSubLabel}>Estimado</Text>
-                        <Text style={[styles.valLabel, { color: colors.text }]}>{formatCurrency(ae.estimated_value)}</Text>
+                        <Text style={[styles.valLabel, { color: colors.text, fontWeight: 'bold' }]}>{formatCurrency(ae.estimated_value)}</Text>
                       </View>
                       {ae.notes && (
-                        <View style={{ flex: 1, marginLeft: 15 }}>
+                        <View style={{ flex: 1, marginLeft: 15, alignItems: 'flex-end' }}>
                           <Text style={styles.valSubLabel}>Notas</Text>
-                          <Text style={{ fontSize: 12, color: colors.textMuted }} numberOfLines={1}>{ae.notes}</Text>
+                          <Text style={{ fontSize: 13, color: colors.textMuted, fontWeight: '500' }} numberOfLines={1}>{ae.notes}</Text>
                         </View>
                       )}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))
               )}
             </View>
@@ -528,7 +632,7 @@ export default function FinancialPlanningScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Novo Investimento</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{editingInvId ? 'Editar Investimento' : 'Novo Investimento'}</Text>
               <TouchableOpacity onPress={() => setInvModalVisible(false)}>
                 <Icon name="close" size={30} color={colors.text} />
               </TouchableOpacity>
@@ -732,6 +836,24 @@ export default function FinancialPlanningScreen({ navigation }: any) {
               />
             )}
             <TouchableOpacity
+              style={[styles.input, { flexDirection: 'row', alignItems: 'center', borderColor: colors.border, backgroundColor: colors.inputBg, marginTop: 15 }]}
+              onPress={() => setShowAeTimePicker(true)}
+            >
+              <Icon name="clock-outline" size={20} color={themeColor} />
+              <Text style={{ color: colors.text, marginLeft: 10 }}>Horário do Alerta: {aeAlertTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</Text>
+            </TouchableOpacity>
+            {showAeTimePicker && (
+              <DateTimePicker
+                value={aeAlertTime}
+                mode="time"
+                display="default"
+                onChange={(event, selectedTime) => {
+                  setShowAeTimePicker(false);
+                  if (selectedTime) setAeAlertTime(selectedTime);
+                }}
+              />
+            )}
+            <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: themeColor }]}
               onPress={handleCreateAnnualExpense}
             >
@@ -760,9 +882,19 @@ const styles = StyleSheet.create({
   pickerContainer: { borderRadius: 20, borderWidth: 1, marginBottom: 15, overflow: 'hidden' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   sectionContainer: { gap: 20, marginTop: 10 },
-  netWorthCard: { borderRadius: 24, padding: 20, elevation: 2 },
-  cardLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
-  netWorthValue: { fontSize: 32, fontWeight: 'bold', marginTop: 10, marginBottom: 15 },
+  netWorthCard: { 
+    borderRadius: 28, 
+    padding: 24, 
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
+    marginBottom: 10
+  },
+  cardLabel: { fontSize: 12, fontWeight: 'bold', letterSpacing: 1 },
+  netWorthValue: { fontSize: 36, fontWeight: '900', marginTop: 8 },
   divider: { height: 1, backgroundColor: '#EEE', marginVertical: 10 },
   rowItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 },
   rowIconLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },

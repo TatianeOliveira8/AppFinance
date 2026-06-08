@@ -158,12 +158,12 @@ export const ProfileScreen = () => {
 
   const handleCloudBackup = async () => {
     Alert.alert(
-      'Backup na Nuvem',
-      'Deseja salvar ou restaurar seus dados criptografados do Firebase Storage?',
+      'Backup de Segurança',
+      'Deseja fazer o backup ou restaurar seus dados da nuvem segura?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Restaurar',
+          text: 'Restaurar Dados',
           onPress: async () => {
             try {
               const res = await api.post('/api/backup/cloud-restore');
@@ -175,11 +175,14 @@ export const ProfileScreen = () => {
           },
         },
         {
-          text: 'Salvar (Sync)',
+          text: 'Fazer Backup',
           onPress: async () => {
             try {
+              Alert.alert('Aguarde...', 'Criptografando e enviando seus dados para a nuvem segura...');
               const res = await api.post('/api/backup/cloud-sync');
-              Alert.alert('Sincronizado', res.data.message);
+              setTimeout(() => {
+                Alert.alert('Concluído', res.data.message);
+              }, 1000);
             } catch (error: any) {
               Alert.alert('Erro', 'Não foi possível realizar o backup na nuvem');
             }

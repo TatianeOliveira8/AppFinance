@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, Switch, ScrollView, Platform, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { storage } from '../utils/storage';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, ACCENT_COLORS } from '../context/ThemeContext';
+import api from '../services/api';
 
 export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const { user, logout, isBiometricSupported, isBiometricEnabled, setupBiometrics, disableBiometrics } = useAuth();
@@ -11,6 +13,23 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     const [showBiometricModal, setShowBiometricModal] = useState(false);
     const [biometricPassword, setBiometricPassword] = useState('');
     const [activatingBiometric, setActivatingBiometric] = useState(false);
+    const [lastBackupDate, setLastBackupDate] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        loadBackupStatus();
+    }, []);
+
+    const loadBackupStatus = async () => {
+        try {
+            const res = await api.get('/api/backup/cloud-status');
+            if (res.data.has_backup && res.data.last_backup) {
+                const date = new Date(res.data.last_backup);
+                setLastBackupDate(date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }));
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    };
 
     const handleLogout = async () => {
         Alert.alert('Sair', 'Deseja realmente sair da sua conta?', [
@@ -204,9 +223,41 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             <TouchableOpacity 
                 style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => {
-                    Alert.alert('Backup em Andamento', 'Sincronizando seus dados financeiros de forma criptografada com o Google Drive/Firebase...', [
-                        { text: 'OK', onPress: () => Alert.alert('Sucesso', 'Backup na nuvem realizado com sucesso!') }
-                    ]);
+                    Alert.alert(
+                      'Backup de Segurança',
+                      'Deseja fazer o backup ou restaurar seus dados da nuvem segura?',
+                      [
+                        { text: 'Cancelar', style: 'cancel' },
+                        {
+                          text: 'Restaurar Dados',
+                          onPress: async () => {
+                            try {
+                              const res = await api.post('/api/backup/cloud-restore');
+                              import('../services/offlineService').then(m => m.offlineService.clearAllCaches());
+                              Alert.alert('Sucesso', 'Restaurado! Recarregue o App para ver as mudanças.');
+                              loadBackupStatus();
+                            } catch (error: any) {
+                              Alert.alert('Erro', error.response?.data?.detail || 'Não foi possível restaurar');
+                            }
+                          },
+                        },
+                        {
+                          text: 'Fazer Backup',
+                          onPress: async () => {
+                            try {
+                              Alert.alert('Aguarde...', 'Criptografando e enviando seus dados para a nuvem segura...');
+                              const res = await api.post('/api/backup/cloud-sync');
+                              setTimeout(() => {
+                                Alert.alert('Concluído', res.data.message);
+                                loadBackupStatus();
+                              }, 1000);
+                            } catch (error: any) {
+                              Alert.alert('Erro', 'Não foi possível realizar o backup na nuvem');
+                            }
+                          },
+                        },
+                      ]
+                    );
                 }}
             >
                 <View style={styles.cardRow}>
@@ -215,7 +266,9 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                     </View>
                     <View style={{ flex: 1 }}>
                         <Text style={[styles.cardTitle, { color: colors.text }]}>Backup Automático</Text>
-                        <Text style={[styles.cardSub, { color: colors.textMuted }]}>Sincronizar dados com a Nuvem</Text>
+                        <Text style={[styles.cardSub, { color: colors.textMuted }]}>
+                            {lastBackupDate ? `Último backup: ${lastBackupDate}` : 'Nenhum backup encontrado'}
+                        </Text>
                     </View>
                     <Icon name="chevron-right" size={24} color={colors.textMuted} />
                 </View>

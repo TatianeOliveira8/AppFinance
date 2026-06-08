@@ -97,8 +97,26 @@ export const transactionService = {
     },
 
     async getTransactions(params?: any): Promise<Transaction[]> {
-        const response = await api.get('/api/transactions/', { params });
-        return response.data;
+        try {
+            const response = await api.get('/api/transactions/', { params });
+            const data = response.data;
+            if (!params) {
+                await offlineService.saveTransactions(data);
+            }
+            return data;
+        } catch (error: any) {
+            if (!error.response) {
+                let cached = await offlineService.getTransactions() || [];
+                const queue = await offlineService.getQueue();
+                const offlineTransactions = queue.map((t: any) => ({
+                    ...t,
+                    id: t.offline_id,
+                    is_offline: true
+                }));
+                return [...offlineTransactions, ...cached];
+            }
+            throw error;
+        }
     },
 
     async createTransaction(data: Partial<Transaction>): Promise<Transaction> {
@@ -106,10 +124,10 @@ export const transactionService = {
             const response = await api.post('/api/transactions/', data);
             return response.data;
         } catch (error: any) {
-            // Se for erro de rede (sem resposta ou timeout), enfileira
+            // Se for erro de rede (sem resposta ou timeout), enfileira e finge que deu sucesso
             if (!error.response) {
                 await offlineService.queueTransaction(data);
-                throw new Error('Você está offline. A transação será sincronizada em breve.');
+                return data as Transaction;
             }
             throw error;
         }
@@ -148,8 +166,26 @@ export const transactionService = {
     },
 
     async getTransactionsByCategory(categoryId: number): Promise<Transaction[]> {
-        const response = await api.get('/api/transactions/', { params: { category_id: categoryId } });
-        return response.data;
+        try {
+            const response = await api.get('/api/transactions/', { params: { category_id: categoryId } });
+            const data = response.data;
+            await offlineService.saveCategoryTransactions(categoryId, data);
+            return data;
+        } catch (error: any) {
+            if (!error.response) {
+                let cached = await offlineService.getCategoryTransactions(categoryId) || [];
+                const queue = await offlineService.getQueue();
+                const offlineTransactions = queue
+                    .filter((t: any) => t.category_id === categoryId)
+                    .map((t: any) => ({
+                        ...t,
+                        id: t.offline_id,
+                        is_offline: true
+                    }));
+                return [...offlineTransactions, ...cached];
+            }
+            throw error;
+        }
     },
 
     async clearCategoryTransactions(categoryId: number): Promise<void> {
@@ -286,10 +322,20 @@ export const transactionService = {
         return response.data;
     },
 
+    async exportAnnualCSV(): Promise<Blob> {
+        const response = await api.get('/api/transactions/export/annual-csv', { responseType: 'blob' });
+        return response.data;
+    },
+
+    async exportAnnualPDF(): Promise<Blob> {
+        const response = await api.get('/api/transactions/export/annual-pdf', { responseType: 'blob' });
+        return response.data;
+    },
+
     async uploadReceipt(uri: string): Promise<{ filename: string, url: string }> {
         const formData = new FormData();
         const filename = uri.split('/').pop() || 'receipt.jpg';
-        
+
         let type = 'image/jpeg';
         if (filename.endsWith('.png')) type = 'image/png';
         else if (filename.endsWith('.pdf')) type = 'application/pdf';

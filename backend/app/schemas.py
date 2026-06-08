@@ -331,6 +331,7 @@ class AnnualExpenseBase(BaseModel):
     is_paid: bool = False
     notes: Optional[str] = None
     alert_days_before: int = 30
+    alert_time: Optional[str] = "10:00"
 
 class AnnualExpenseCreate(AnnualExpenseBase):
     pass
@@ -342,6 +343,7 @@ class AnnualExpenseUpdate(BaseModel):
     is_paid: Optional[bool] = None
     notes: Optional[str] = None
     alert_days_before: Optional[int] = None
+    alert_time: Optional[str] = None
 
 class AnnualExpenseResponse(AnnualExpenseBase):
     id: int

@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -15,7 +16,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { transactionService } from '../services/transactionService';
-import { formatDate } from '../utils/helpers';
+import { formatCurrency, formatDate } from '../utils/helpers';
 import { CONFIG } from '../config';
 import { storage } from '../utils/storage';
 
@@ -27,6 +28,7 @@ export default function ReconciliationScreen({ navigation }: any) {
   const [importing, setImporting] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
 
   const handlePickDocument = async () => {
     try {
@@ -39,7 +41,7 @@ export default function ReconciliationScreen({ navigation }: any) {
 
       const file = res.assets[0];
       setLoading(true);
-      
+
       const data = await transactionService.importTransactions({
         uri: file.uri,
         name: file.name,
@@ -47,7 +49,7 @@ export default function ReconciliationScreen({ navigation }: any) {
       });
 
       setTransactions(data.transactions);
-      
+
       // Auto-select non-existing ones
       const nonExisting: number[] = [];
       data.transactions.forEach((t: any, index: number) => {
@@ -107,18 +109,31 @@ export default function ReconciliationScreen({ navigation }: any) {
     }
   };
 
-  const handleExport = async (format: 'csv' | 'pdf') => {
+  const handleExport = async (format: 'csv' | 'pdf', reportType: 'monthly' | 'annual' = 'monthly') => {
     try {
       setLoading(true);
-      
-      if (Platform.OS === 'web') {
-        const blob = format === 'csv' 
-          ? await transactionService.exportCSV() 
+      setReportModalVisible(false);
+
+      let blob: Blob;
+      let fileName: string;
+
+      if (reportType === 'annual') {
+        blob = format === 'csv'
+          ? await transactionService.exportAnnualCSV()
+          : await transactionService.exportAnnualPDF();
+        fileName = format === 'csv' ? 'relatorio_anual.csv' : 'relatorio_anual.pdf';
+      } else {
+        blob = format === 'csv'
+          ? await transactionService.exportCSV()
           : await transactionService.exportPDF();
+        fileName = format === 'csv' ? 'transacoes.csv' : 'relatorio.pdf';
+      }
+
+      if (Platform.OS === 'web') {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = format === 'csv' ? 'transacoes.csv' : 'relatorio.pdf';
+        a.download = fileName;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -126,13 +141,8 @@ export default function ReconciliationScreen({ navigation }: any) {
         Alert.alert('Sucesso', 'Download iniciado!');
       } else {
         // Native Export using Blob to Base64 (Solves the FileSystem URL block issue)
-        const blob = format === 'csv' 
-          ? await transactionService.exportCSV() 
-          : await transactionService.exportPDF();
-          
-        const fileName = format === 'csv' ? 'transacoes.csv' : 'relatorio.pdf';
         const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-        
+
         await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.readAsDataURL(blob);
@@ -153,15 +163,17 @@ export default function ReconciliationScreen({ navigation }: any) {
         });
 
         if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(fileUri, { 
+          await Sharing.shareAsync(fileUri, {
             mimeType: format === 'csv' ? 'text/csv' : 'application/pdf',
-            dialogTitle: format === 'csv' ? 'Exportar CSV' : 'Exportar PDF'
+            dialogTitle: reportType === 'annual'
+              ? (format === 'csv' ? 'Exportar Relatório Anual CSV' : 'Exportar Relatório Anual PDF')
+              : (format === 'csv' ? 'Exportar CSV' : 'Exportar PDF')
           });
         } else {
           Alert.alert('Sucesso', 'Arquivo salvo internamente no celular.');
         }
       }
-      } catch (e: any) {
+    } catch (e: any) {
       console.error('Erro de exportação:', e);
       Alert.alert('Erro ao Exportar', `Detalhes: ${e.message || String(e)}\n\nVerifique se o aplicativo tem permissão para acessar os arquivos/armazenamento do dispositivo.`);
     } finally {
@@ -216,29 +228,35 @@ export default function ReconciliationScreen({ navigation }: any) {
                 key={idx}
                 style={[
                   styles.transactionRow,
-                  { backgroundColor: colors.surface },
-                  t.already_exists && { backgroundColor: '#FFF9C4', borderColor: '#FBC02D', borderWidth: 1 }
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  t.already_exists && { backgroundColor: colors.inputBg, opacity: 0.8 }
                 ]}
                 onPress={() => !t.already_exists && toggleSelect(idx)}
-                disabled={t.already_exists}
+                activeOpacity={t.already_exists ? 1 : 0.7}
               >
-                <Icon
-                  name={t.already_exists ? "checkbox-marked-circle" : (selectedIndices.includes(idx) ? "checkbox-marked" : "checkbox-blank-outline")}
-                  size={24}
-                  color={t.already_exists ? '#FBC02D' : themeColor}
-                />
-                <View style={{ flex: 1, marginLeft: 10 }}>
+                <View style={[styles.iconContainer, t.already_exists ? { backgroundColor: '#4CAF5015' } : { backgroundColor: themeColor + '15' }]}>
+                  <Icon
+                    name={t.already_exists ? "check-all" : (selectedIndices.includes(idx) ? "check-circle" : "circle-outline")}
+                    size={22}
+                    color={t.already_exists ? '#4CAF50' : (selectedIndices.includes(idx) ? themeColor : colors.border)}
+                  />
+                </View>
+
+                <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.descText, { color: colors.text }]} numberOfLines={1}>{t.description}</Text>
-                  <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                    {formatDate(t.date)} • Sugestão: {t.suggested_category_name || 'Nenhuma'}
+                  <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                    {formatDate(t.date)}
                   </Text>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 15, fontWeight: 'bold', color: t.type === 'income' ? '#2E7D32' : '#C62828' }}>
-                    {t.type === 'income' ? '+' : '-'} R$ {t.value.toFixed(2)}
+
+                <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                  <Text style={[styles.valueText, { color: t.type === 'income' ? '#4CAF50' : colors.text }]}>
+                    {t.type === 'income' ? '+' : '-'} {formatCurrency(t.value)}
                   </Text>
                   {t.already_exists && (
-                    <Text style={{ fontSize: 10, color: '#F57F17', fontWeight: 'bold' }}>Reconciliado</Text>
+                    <View style={styles.badgeReconciled}>
+                      <Text style={styles.badgeReconciledText}>Já Registrado</Text>
+                    </View>
                   )}
                 </View>
               </TouchableOpacity>
@@ -265,25 +283,115 @@ export default function ReconciliationScreen({ navigation }: any) {
             Gere relatórios completos de suas transações para o contador ou controle externo.
           </Text>
 
-          <View style={styles.exportRow}>
-            <TouchableOpacity
-              style={[styles.exportBtn, { backgroundColor: themeColor }]}
-              onPress={() => handleExport('csv')}
-            >
-              <Icon name="file-document-outline" size={22} color="#FFF" />
-              <Text style={styles.exportBtnText}>Planilha CSV</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.exportBtn, { backgroundColor: themeColor }]}
-              onPress={() => handleExport('pdf')}
-            >
-              <Icon name="file-document-outline" size={22} color="#FFF" />
-              <Text style={styles.exportBtnText}>Relatório PDF</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.exportBtn, { backgroundColor: themeColor, marginBottom: 12 }]}
+            onPress={() => setReportModalVisible(true)}
+          >
+            <Icon name="file-document-outline" size={22} color="#FFF" />
+            <Text style={styles.exportBtnText}>Gerar Relatório</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* REPORT TYPE SELECTION MODAL */}
+      <Modal visible={reportModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Tipo de Relatório</Text>
+              <TouchableOpacity onPress={() => setReportModalVisible(false)}>
+                <Icon name="close" size={28} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.reportOptions}>
+              {/* RELATÓRIO MENSAL */}
+              <View style={styles.reportSection}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <Icon name="calendar-month-outline" size={22} color={themeColor} />
+                  <Text style={[styles.reportSectionTitle, { color: colors.text }]}>Relatório Mensal</Text>
+                </View>
+                <Text style={[styles.reportSectionDesc, { color: colors.textMuted }]}>
+                  Todas as transações do mês com análise detalhada
+                </Text>
+                <View style={styles.reportButtonGroup}>
+                  <TouchableOpacity
+                    style={[styles.reportTypeBtn, { backgroundColor: themeColor }]}
+                    onPress={() => handleExport('csv', 'monthly')}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Icon name="file-delimited" size={20} color="#FFF" />
+                        <Text style={styles.reportTypeBtnText}>CSV</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.reportTypeBtn, { backgroundColor: themeColor }]}
+                    onPress={() => handleExport('pdf', 'monthly')}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Icon name="file-pdf-box" size={20} color="#FFF" />
+                        <Text style={styles.reportTypeBtnText}>PDF</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              {/* RELATÓRIO ANUAL */}
+              <View style={styles.reportSection}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <Icon name="chart-line" size={22} color={themeColor} />
+                  <Text style={[styles.reportSectionTitle, { color: colors.text }]}>Relatório Anual</Text>
+                </View>
+                <Text style={[styles.reportSectionDesc, { color: colors.textMuted }]}>
+                  Análise completa do ano por categoria e mês
+                </Text>
+                <View style={styles.reportButtonGroup}>
+                  <TouchableOpacity
+                    style={[styles.reportTypeBtn, { backgroundColor: themeColor }]}
+                    onPress={() => handleExport('csv', 'annual')}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Icon name="file-delimited" size={20} color="#FFF" />
+                        <Text style={styles.reportTypeBtnText}>CSV</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.reportTypeBtn, { backgroundColor: themeColor }]}
+                    onPress={() => handleExport('pdf', 'annual')}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Icon name="file-pdf-box" size={20} color="#FFF" />
+                        <Text style={styles.reportTypeBtnText}>PDF</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -298,11 +406,57 @@ const styles = StyleSheet.create({
   cardSub: { fontSize: 13, lineHeight: 20, marginBottom: 20 },
   uploadBtn: { borderStyle: 'dashed', borderWidth: 2, borderRadius: 24, padding: 35, alignItems: 'center', gap: 12, justifyContent: 'center' },
   uploadBtnText: { fontSize: 16, fontWeight: 'bold' },
-  transactionRow: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 20, marginBottom: 12, elevation: 1 },
+  transactionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   descText: { fontSize: 15, fontWeight: 'bold' },
-  importBtn: { padding: 20, borderRadius: 24, alignItems: 'center', marginTop: 20 },
+  valueText: { fontSize: 16, fontWeight: '900' },
+  badgeReconciled: {
+    backgroundColor: '#4CAF5015',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  badgeReconciledText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4CAF50',
+    textTransform: 'uppercase',
+  },
+  importBtn: { padding: 20, borderRadius: 24, alignItems: 'center', marginTop: 10 },
   importBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
   exportRow: { flexDirection: 'row', gap: 12, marginTop: 10 },
   exportBtn: { flex: 1, flexDirection: 'row', padding: 18, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  exportBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 15 }
+  exportBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
+  // Modal styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 24, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 24, fontWeight: 'bold' },
+  reportOptions: { gap: 20 },
+  reportSection: { gap: 12 },
+  reportSectionTitle: { fontSize: 16, fontWeight: 'bold' },
+  reportSectionDesc: { fontSize: 13, lineHeight: 18 },
+  reportButtonGroup: { flexDirection: 'row', gap: 10 },
+  reportTypeBtn: { flex: 1, flexDirection: 'row', padding: 14, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  reportTypeBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
+  divider: { height: 1, backgroundColor: '#EEE', marginVertical: 10 }
 });

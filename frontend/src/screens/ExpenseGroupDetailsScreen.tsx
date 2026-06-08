@@ -19,6 +19,41 @@ import { formatDate, formatCurrency } from '../utils/helpers';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
+// Mapeamento de categorias para ícones padrão
+const CATEGORY_ICONS: { [key: string]: string } = {
+  'moradia': 'home-outline',
+  'alimentação': 'silverware-fork-knife',
+  'alimentacao': 'silverware-fork-knife', // sem acento
+  'transporte': 'car-outline',
+  'saúde': 'hospital-box-outline',
+  'saude': 'hospital-box-outline', // sem acento
+  'lazer': 'gamepad-variant-outline',
+  'outros': 'tag',
+  'pet': 'paw',
+};
+
+const CATEGORY_COLORS: { [key: string]: string } = {
+  'moradia': '#FF5252',
+  'alimentação': '#FF9100',
+  'alimentacao': '#FF9100',
+  'transporte': '#FF5252',
+  'saúde': '#FF5252',
+  'saude': '#FF5252',
+  'lazer': '#FF9100',
+  'outros': '#FF5252',
+  'pet': '#448AFF',
+};
+
+const getCategoryIcon = (category: Category): string => {
+  const categoryLower = category.name.toLowerCase();
+  return CATEGORY_ICONS[categoryLower] || category.icon || 'tag';
+};
+
+const getCategoryColor = (category: Category): string => {
+  const categoryLower = category.name.toLowerCase();
+  return CATEGORY_COLORS[categoryLower] || category.color || '#FF5252';
+};
+
 export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
   const { groupId } = route.params;
   const { colors } = useTheme();
@@ -52,12 +87,32 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
     loadDetails();
   }, []);
 
+  const formatCurrencyInput = (text: string): string => {
+    // Remove caracteres não numéricos
+    const cleaned = text.replace(/\D/g, '');
+    if (cleaned === '') return '';
+
+    // Converter para número e formatar
+    const num = parseInt(cleaned, 10);
+    const formatted = (num / 100).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    return formatted;
+  };
+
+  const handleExpValueChange = (text: string) => {
+    const formatted = formatCurrencyInput(text);
+    setExpValue(formatted);
+  };
+
   const loadDetails = async () => {
     setLoading(true);
     try {
       const gData = await expenseGroupsService.getGroup(groupId);
       setGroup(gData);
-      
+
       const sData = await expenseGroupsService.calculateSettlement(groupId);
       setSettlementInfo(sData);
 
@@ -87,7 +142,15 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
       setMemEmail('');
       loadDetails();
     } catch (e: any) {
-      const errorMsg = e.response?.data?.detail || 'Não foi possível adicionar o membro. Certifique-se de que ele tem o app instalado.';
+      const statusCode = e.response?.status;
+      let errorMsg = 'Erro ao verificar o usuário.';
+
+      if (statusCode === 404) {
+        errorMsg = '⚠️ Usuário sem conta cadastrada\n\nEste e-mail não está registrado no aplicativo. O participante precisa instalar o app e criar uma conta primeiro.';
+      } else {
+        errorMsg = e.response?.data?.detail || 'Não foi possível adicionar o membro. Certifique-se de que ele tem o app instalado.';
+      }
+
       Alert.alert('Erro', errorMsg);
     }
   };
@@ -100,7 +163,9 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
     const selectedCategory = categories.find(c => c.id === expCategoryId);
     const desc = selectedCategory ? selectedCategory.name : 'Despesa de Grupo';
     try {
-      await expenseGroupsService.addExpense(groupId, desc, parseFloat(expValue.replace(',', '.')), expPaidBy);
+      // Converter valor formatado para número
+      const numValue = parseFloat(expValue.replace(/\./g, '').replace(',', '.'));
+      await expenseGroupsService.addExpense(groupId, desc, numValue, expPaidBy);
       Alert.alert('Sucesso', 'Despesa adicionada!');
       setExpModalVisible(false);
       setExpCategoryId(null);
@@ -115,15 +180,17 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
   const handleSettleGroup = async () => {
     Alert.alert('Liquidar', 'Deseja marcar todas as despesas atuais como liquidadas?', [
       { text: 'Cancelar' },
-      { text: 'Confirmar', onPress: async () => {
-        try {
-          await expenseGroupsService.settleGroup(groupId);
-          Alert.alert('Sucesso', 'Grupo liquidado!');
-          loadDetails();
-        } catch (e) {
-          Alert.alert('Erro', 'Não foi possível liquidar o grupo.');
+      {
+        text: 'Confirmar', onPress: async () => {
+          try {
+            await expenseGroupsService.settleGroup(groupId);
+            Alert.alert('Sucesso', 'Grupo liquidado!');
+            loadDetails();
+          } catch (e) {
+            Alert.alert('Erro', 'Não foi possível liquidar o grupo.');
+          }
         }
-      }}
+      }
     ]);
   };
 
@@ -164,7 +231,8 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
             try {
               await expenseGroupsService.deleteGroup(groupId);
               Alert.alert('Sucesso', 'Grupo excluído com sucesso!');
-              navigation.goBack();
+              // Passar parâmetro para indicar que o grupo foi deletado
+              navigation.navigate('ExpenseGroups', { refreshGroups: true });
             } catch (e) {
               Alert.alert('Erro', 'Não foi possível excluir o grupo.');
             }
@@ -308,9 +376,25 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
               style={[styles.pickerBtn, { backgroundColor: colors.inputBg, borderColor: colors.border, marginBottom: 15 }]}
               onPress={() => setCategoryModalVisible(true)}
             >
-              <Text style={{ color: expCategoryId ? colors.inputText : colors.placeholder }}>
-                {expCategoryId ? categories.find(c => c.id === expCategoryId)?.name : 'Selecione a Categoria *'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                {expCategoryId && (
+                  <>
+                    {(() => {
+                      const selectedCat = categories.find(c => c.id === expCategoryId);
+                      return selectedCat ? (
+                        <Icon
+                          name={getCategoryIcon(selectedCat)}
+                          size={24}
+                          color={getCategoryColor(selectedCat)}
+                        />
+                      ) : null;
+                    })()}
+                  </>
+                )}
+                <Text style={{ color: expCategoryId ? colors.inputText : colors.placeholder, flex: 1 }}>
+                  {expCategoryId ? categories.find(c => c.id === expCategoryId)?.name : 'Selecione a Categoria *'}
+                </Text>
+              </View>
               <Icon name="chevron-down" size={20} color={colors.textMuted} />
             </TouchableOpacity>
             <TextInput
@@ -318,7 +402,7 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
               placeholder="VALOR * (R$)"
               keyboardType="numeric"
               value={expValue}
-              onChangeText={setExpValue}
+              onChangeText={handleExpValueChange}
               placeholderTextColor={colors.placeholder}
             />
 
@@ -361,7 +445,7 @@ export default function ExpenseGroupDetailsScreen({ route, navigation }: any) {
                   onPress={() => { setExpCategoryId(item.id); setCategoryModalVisible(false); }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Icon name={item.icon || 'tag'} size={24} color={item.color || themeColor} />
+                    <Icon name={getCategoryIcon(item)} size={24} color={getCategoryColor(item)} />
                     <Text style={{ fontSize: 16, color: colors.text }}>{item.name}</Text>
                   </View>
                 </TouchableOpacity>
@@ -492,7 +576,7 @@ const styles = StyleSheet.create({
   expenseDesc: { fontSize: 16, fontWeight: 'bold' },
   settledBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginTop: 6, alignSelf: 'flex-end' },
   settledBadgeText: { color: '#2E7D32', fontSize: 11, fontWeight: 'bold' },
-  
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 24, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },

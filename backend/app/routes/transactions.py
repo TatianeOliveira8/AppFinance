@@ -255,13 +255,13 @@ def get_summary(
     for t in transactions:
         if t.type == TransactionType.expense and is_effectively_paid(t, now_naive):
             if t.category:
-                cat_key = (t.category.id, t.category.name, t.category.icon, t.category.color, t.category.is_default)
+                cat_key = (t.category.id, t.category.name, t.category.icon, t.category.color, t.category.is_default, t.category.budget_limit)
                 if cat_key not in categories_expense_dict:
                     categories_expense_dict[cat_key] = 0
                 categories_expense_dict[cat_key] += t.value
     
     categories_expense = [
-        {"id": k[0], "name": k[1], "icon": k[2], "color": k[3], "isDefault": k[4], "value": v}
+        {"id": k[0], "name": k[1], "icon": k[2], "color": k[3], "isDefault": k[4], "budget_limit": k[5], "value": v}
         for k, v in categories_expense_dict.items()
     ]
     
@@ -270,20 +270,20 @@ def get_summary(
     for t in transactions:
         if t.type == TransactionType.income and is_effectively_paid(t, now_naive):
             if t.category:
-                cat_key = (t.category.id, t.category.name, t.category.icon, t.category.color, t.category.is_default)
+                cat_key = (t.category.id, t.category.name, t.category.icon, t.category.color, t.category.is_default, t.category.budget_limit)
                 if cat_key not in categories_income_dict:
                     categories_income_dict[cat_key] = 0
                 categories_income_dict[cat_key] += t.value
     
     categories_income = [
-        {"id": k[0], "name": k[1], "icon": k[2], "color": k[3], "isDefault": k[4], "value": v}
+        {"id": k[0], "name": k[1], "icon": k[2], "color": k[3], "isDefault": k[4], "budget_limit": k[5], "value": v}
         for k, v in categories_income_dict.items()
     ]
     
     by_category_expense = [
         {
             "id": c["id"], "name": c["name"], "icon": c["icon"], "color": c["color"], "value": c["value"], 
-            "isDefault": c["isDefault"],
+            "isDefault": c["isDefault"], "budget_limit": c["budget_limit"],
             "percentage": round((c["value"]/total_expense_month*100),1) if total_expense_month > 0 else 0
         } for c in categories_expense
     ]
@@ -291,7 +291,7 @@ def get_summary(
     by_category_income = [
         {
             "id": c["id"], "name": c["name"], "icon": c["icon"], "color": c["color"], "value": c["value"], 
-            "isDefault": c["isDefault"],
+            "isDefault": c["isDefault"], "budget_limit": c["budget_limit"],
             "percentage": round((c["value"]/total_income_month*100),1) if total_income_month > 0 else 0
         } for c in categories_income
     ]
@@ -579,8 +579,15 @@ async def import_transactions(
             
     elif filename.endswith(".csv"):
         try:
-            text = contents.decode("utf-8")
+            try:
+                text = contents.decode("utf-8")
+            except UnicodeDecodeError:
+                text = contents.decode("latin-1")
+                
             import csv
+            
+            with open("debug_last_import.csv", "w", encoding="utf-8") as f:
+                f.write(text)
             
             # Tentar adivinhar o delimitador automaticamente
             delim = ";" if ";" in text else ","
@@ -593,7 +600,12 @@ async def import_transactions(
             # Detectar se há cabeçalho
             first_row = rows[0]
             has_header = False
-            if len(first_row) > 1:
+            is_own_export = False
+            
+            if len(first_row) > 0 and "ID" in first_row[0].upper() and len(first_row) > 3 and "DATA" in first_row[1].upper():
+                has_header = True
+                is_own_export = True
+            elif len(first_row) > 1:
                 val_clean = first_row[1].strip().replace(",", ".")
                 try:
                     float(val_clean)
@@ -605,9 +617,32 @@ async def import_transactions(
                 if not row or len(row) < 2 or not row[0].strip():
                     continue
                 
+                if is_own_export and len(row) >= 5:
+                    # Formato do próprio App: ID(0), Data(1), Tipo(2), Valor(3), Descrição(4)
+                    date_str = row[1].strip()
+                    try:
+                        date_val = datetime.strptime(date_str, "%Y-%m-%d")
+                    except ValueError:
+                        date_val = datetime.utcnow()
+                    
+                    try:
+                        val = abs(float(row[3].strip()))
+                    except ValueError:
+                        continue
+                    
+                    t_type = "income" if row[2].strip().lower() == "income" else "expense"
+                    desc_val = row[4].strip()
+                    
+                    parsed.append({
+                        "date": date_val,
+                        "value": val,
+                        "type": t_type,
+                        "description": desc_val,
+                    })
+                    continue
+
+                # Fallback genérico para CSV de outros bancos
                 date_str = row[0].strip()
-                val_str = row[1].strip().replace(",", ".") # Limpar centavos (Brasil usa vírgula)
-                
                 try:
                     date_val = datetime.strptime(date_str, "%Y-%m-%d")
                 except ValueError:
@@ -616,15 +651,37 @@ async def import_transactions(
                     except ValueError:
                         date_val = datetime.utcnow()
                 
-                try:
-                    val = abs(float(val_str))
-                except ValueError:
+                # Tenta encontrar qual coluna é o valor
+                val_idx = -1
+                clean_val = 0.0
+                for i in range(1, len(row)):
+                    v_str = row[i].replace('R$', '').replace(' ', '').strip()
+                    # Formato brasileiro: 1.500,00 -> 1500.00
+                    if v_str.count(',') == 1 and v_str.count('.') >= 1:
+                        v_str = v_str.replace('.', '').replace(',', '.')
+                    # Apenas vírgula: 150,00 -> 150.00
+                    elif v_str.count(',') == 1 and v_str.count('.') == 0:
+                        v_str = v_str.replace(',', '.')
+                        
+                    try:
+                        clean_val = float(v_str)
+                        val_idx = i
+                        break
+                    except ValueError:
+                        continue
+                
+                if val_idx == -1:
                     continue
                 
-                t_type = "expense"
-                if len(row) > 2:
-                    t_type = "income" if row[2].strip().lower() in ["income", "receita", "entrada", "credit", "credito"] else "expense"
-                desc_val = row[3].strip() if len(row) > 3 else "Transação CSV"
+                # A descrição será a primeira coluna após a data que não seja o valor
+                desc_val = "Transação CSV"
+                for i in range(1, len(row)):
+                    if i != val_idx and row[i].strip():
+                        desc_val = row[i].strip()
+                        break
+                
+                t_type = "income" if clean_val >= 0 else "expense"
+                val = abs(clean_val)
                 
                 parsed.append({
                     "date": date_val,
@@ -795,6 +852,186 @@ def export_pdf(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=relatorio.pdf"}
+    )
+
+@router.get("/export/annual-csv")
+def export_annual_csv(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    """Exporta todas as transações do ano em CSV no mesmo formato do CSV mensal"""
+    from datetime import datetime
+    import io, csv
+    from fastapi.responses import StreamingResponse
+    
+    # Pega o ano atual
+    current_year = datetime.now().year
+    
+    query = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        func.extract('year', Transaction.date) == current_year
+    ).order_by(Transaction.date.desc())
+    
+    transactions = query.all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Mesmo cabeçalho do CSV mensal para compatibilidade
+    writer.writerow(["ID", "Data", "Tipo", "Valor", "Descrição", "Pago", "Fixo", "Categoria", "Método de Pagamento", "Contato", "Endereço"])
+    
+    for t in transactions:
+        cat_name = t.category.name if t.category else ""
+        writer.writerow([
+            t.id,
+            t.date.strftime("%Y-%m-%d"),
+            t.type.value,
+            t.value,
+            t.description or "",
+            "Sim" if t.is_paid else "Não",
+            "Sim" if t.is_fixed else "Não",
+            cat_name,
+            t.payment_method.value if t.payment_method else "",
+            t.contact_name or "",
+            t.location_address or ""
+        ])
+        
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode("utf-8")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=relatorio_anual_{current_year}.csv"}
+    )
+
+@router.get("/export/annual-pdf")
+def export_annual_pdf(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    """Exporta relatório anual em PDF com análise por categoria, mês e gráficos"""
+    from datetime import datetime
+    from fpdf import FPDF
+    from fastapi.responses import Response
+    
+    current_year = datetime.now().year
+    
+    query = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        func.extract('year', Transaction.date) == current_year
+    ).order_by(Transaction.date)
+    
+    transactions = query.all()
+    
+    # Análise por categoria
+    category_summary = {}
+    monthly_summary = {m: {'income': 0.0, 'expense': 0.0} for m in range(1, 13)}
+    
+    for t in transactions:
+        month = t.date.month
+        cat_name = t.category.name if t.category else "Sem Categoria"
+        
+        if cat_name not in category_summary:
+            category_summary[cat_name] = {'income': 0.0, 'expense': 0.0}
+        
+        if t.type == TransactionType.income:
+            category_summary[cat_name]['income'] += t.value
+            monthly_summary[month]['income'] += t.value
+        else:
+            category_summary[cat_name]['expense'] += t.value
+            monthly_summary[month]['expense'] += t.value
+    
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('helvetica', 'B', 18)
+            self.cell(0, 15, f'Relatório Anual {current_year}', border=False, new_x="LMARGIN", new_y="NEXT", align='C')
+            self.set_font('helvetica', 'I', 10)
+            self.cell(0, 8, f'Gerado em {datetime.now().strftime("%d/%m/%Y")}', border=False, new_x="LMARGIN", new_y="NEXT", align='C')
+            self.ln(5)
+            
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('helvetica', 'I', 8)
+            self.cell(0, 10, f'Página {self.page_no()}', align='C')
+    
+    pdf = PDF()
+    pdf.add_page()
+    pdf.set_font('helvetica', '', 10)
+    
+    # Totais
+    total_income = sum(v['income'] for v in category_summary.values())
+    total_expense = sum(v['expense'] for v in category_summary.values())
+    saldo = total_income - total_expense
+    
+    pdf.set_font('helvetica', 'B', 12)
+    pdf.cell(0, 10, 'RESUMO GERAL', border=False, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_font('helvetica', '', 11)
+    pdf.cell(60, 8, f"Total de Receitas:", border=0)
+    pdf.cell(0, 8, f"R$ {total_income:,.2f}", border=0, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.cell(60, 8, f"Total de Despesas:", border=0)
+    pdf.cell(0, 8, f"R$ {total_expense:,.2f}", border=0, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_font('helvetica', 'B', 11)
+    pdf.cell(60, 8, f"Saldo do Ano:", border=0)
+    color = 0 if saldo >= 0 else 255
+    pdf.set_text_color(0, 128 if saldo >= 0 else 0, 0 if saldo >= 0 else 200)
+    pdf.cell(0, 8, f"R$ {saldo:,.2f}", border=0, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    
+    pdf.ln(5)
+    
+    # Tabela de categorias
+    pdf.set_font('helvetica', 'B', 11)
+    pdf.cell(0, 10, 'ANÁLISE POR CATEGORIA', border=False, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_font('helvetica', 'B', 9)
+    pdf.cell(40, 8, 'Categoria', border=1)
+    pdf.cell(30, 8, 'Receitas', border=1, align='R')
+    pdf.cell(30, 8, 'Despesas', border=1, align='R')
+    pdf.cell(30, 8, 'Saldo', border=1, align='R', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_font('helvetica', '', 9)
+    for cat_name in sorted(category_summary.keys()):
+        values = category_summary[cat_name]
+        cat_saldo = values['income'] - values['expense']
+        
+        pdf.cell(40, 8, cat_name[:30], border=1)
+        pdf.cell(30, 8, f"R$ {values['income']:,.2f}", border=1, align='R')
+        pdf.cell(30, 8, f"R$ {values['expense']:,.2f}", border=1, align='R')
+        pdf.cell(30, 8, f"R$ {cat_saldo:,.2f}", border=1, align='R', new_x="LMARGIN", new_y="NEXT")
+    
+    # Nova página para resumo mensal
+    pdf.add_page()
+    pdf.set_font('helvetica', 'B', 12)
+    pdf.cell(0, 10, 'ANÁLISE MENSAL', border=False, new_x="LMARGIN", new_y="NEXT")
+    
+    months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+              "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    
+    pdf.set_font('helvetica', 'B', 9)
+    pdf.cell(30, 8, 'Mês', border=1)
+    pdf.cell(30, 8, 'Receitas', border=1, align='R')
+    pdf.cell(30, 8, 'Despesas', border=1, align='R')
+    pdf.cell(30, 8, 'Saldo', border=1, align='R', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_font('helvetica', '', 9)
+    for m in range(1, 13):
+        income = monthly_summary[m]['income']
+        expense = monthly_summary[m]['expense']
+        saldo_mes = income - expense
+        
+        pdf.cell(30, 8, months[m-1], border=1)
+        pdf.cell(30, 8, f"R$ {income:,.2f}", border=1, align='R')
+        pdf.cell(30, 8, f"R$ {expense:,.2f}", border=1, align='R')
+        pdf.cell(30, 8, f"R$ {saldo_mes:,.2f}", border=1, align='R', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf_bytes = bytes(pdf.output())
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=relatorio_anual_{current_year}.pdf"}
     )
 
 # ─── RF18: ALERTAS DE GASTOS ANORMAIS ─────────────────────────────────────────

@@ -15,6 +15,25 @@ export const offlineService = {
     return data ? JSON.parse(data) : null;
   },
 
+  // Caching Transactions
+  async saveTransactions(data: Transaction[]): Promise<void> {
+    await storage.setItem('cache_transactions', JSON.stringify(data));
+  },
+
+  async getTransactions(): Promise<Transaction[] | null> {
+    const data = await storage.getItem('cache_transactions');
+    return data ? JSON.parse(data) : null;
+  },
+
+  async saveCategoryTransactions(categoryId: number, data: Transaction[]): Promise<void> {
+    await storage.setItem(`cache_cat_trans_${categoryId}`, JSON.stringify(data));
+  },
+
+  async getCategoryTransactions(categoryId: number): Promise<Transaction[] | null> {
+    const data = await storage.getItem(`cache_cat_trans_${categoryId}`);
+    return data ? JSON.parse(data) : null;
+  },
+
   // Caching Metadata
   async saveCategories(data: any[], type?: string): Promise<void> {
     const key = `cache_categories_${type || 'all'}`;
@@ -55,6 +74,16 @@ export const offlineService = {
   async getQueue(): Promise<any[]> {
     const data = await storage.getItem(QUEUE_KEY);
     return data ? JSON.parse(data) : [];
+  },
+
+  async clearAllCaches(): Promise<void> {
+    await storage.removeItem(SUMMARY_CACHE_KEY);
+    await storage.removeItem('cache_transactions');
+    await storage.removeItem('cache_categories_all');
+    await storage.removeItem('cache_categories_income');
+    await storage.removeItem('cache_categories_expense');
+    await storage.removeItem('cache_cards');
+    await storage.removeItem('cache_accounts');
   },
 
   async removeItemFromQueue(offlineId: number): Promise<void> {

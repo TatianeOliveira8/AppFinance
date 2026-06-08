@@ -39,13 +39,29 @@ export const CategoryDetailsModal: React.FC<CategoryDetailsModalProps> = ({
 }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
-  const [newLimit, setNewLimit] = useState(initialLimit?.toString() || '');
+  const formatToCurrency = (val: string) => {
+    let cleanVal = val.replace(/\D/g, '');
+    if (!cleanVal) return '';
+    let intVal = parseInt(cleanVal);
+    return (intVal / 100).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const [newLimit, setNewLimit] = useState(
+    initialLimit ? formatToCurrency((initialLimit * 100).toFixed(0)) : ''
+  );
   const [saving, setSaving] = useState(false);
   const { colors } = useTheme();
 
   useEffect(() => {
-    setNewLimit(initialLimit?.toString() || '');
+    setNewLimit(initialLimit ? formatToCurrency((initialLimit * 100).toFixed(0)) : '');
   }, [initialLimit]);
+
+  const handleLimitChange = (text: string) => {
+    setNewLimit(formatToCurrency(text));
+  };
 
   useEffect(() => {
     if (visible && categoryId) {
@@ -69,7 +85,8 @@ export const CategoryDetailsModal: React.FC<CategoryDetailsModalProps> = ({
   const handleSaveLimit = async () => {
     try {
       setSaving(true);
-      await transactionService.updateCategory(categoryId, { budget_limit: newLimit ? parseFloat(newLimit) : undefined });
+      const numericValue = newLimit ? parseFloat(newLimit.replace(/\./g, '').replace(',', '.')) : undefined;
+      await transactionService.updateCategory(categoryId, { budget_limit: numericValue });
       Alert.alert('Sucesso', 'Limite de gastos atualizado!');
       onDelete?.(); // Gatilho para atualizar a home
     } catch (error) {
@@ -187,10 +204,10 @@ export const CategoryDetailsModal: React.FC<CategoryDetailsModalProps> = ({
                     <TextInput
                         style={[styles.budgetInput, { color: colors.text }]}
                         keyboardType="numeric"
-                        placeholder="Ex: 500.00"
+                        placeholder="0,00"
                         placeholderTextColor={colors.placeholder}
                         value={newLimit}
-                        onChangeText={setNewLimit}
+                        onChangeText={handleLimitChange}
                     />
                 </View>
                 <TouchableOpacity 

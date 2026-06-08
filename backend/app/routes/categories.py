@@ -71,23 +71,25 @@ def update_category(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    """Edita uma categoria (apenas se não for padrão e pertencer ao usuário)"""
+    """Edita uma categoria"""
     category = db.query(Category).filter(
-        Category.id == category_id,
-        Category.user_id == user_id
+        (Category.id == category_id) & ((Category.user_id == user_id) | (Category.is_default == True))
     ).first()
     
     if not category:
         raise HTTPException(status_code=404, detail="Categoria não encontrada ou não permitida")
     
     if category.is_default:
-        raise HTTPException(status_code=403, detail="Categorias do sistema não podem ser editadas")
-    
-    if data.name: category.name = data.name
-    if data.type: category.type = data.type
-    if data.icon: category.icon = data.icon
-    if data.color: category.color = data.color
-    if data.budget_limit is not None: category.budget_limit = data.budget_limit
+        if data.budget_limit is not None:
+            category.budget_limit = data.budget_limit
+        else:
+            raise HTTPException(status_code=403, detail="Apenas o limite de gastos pode ser editado em categorias do sistema")
+    else:
+        if data.name: category.name = data.name
+        if data.type: category.type = data.type
+        if data.icon: category.icon = data.icon
+        if data.color: category.color = data.color
+        if data.budget_limit is not None: category.budget_limit = data.budget_limit
     
     db.commit()
     db.refresh(category)
