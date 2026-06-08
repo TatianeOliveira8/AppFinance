@@ -103,7 +103,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const bioEmail = await storage.getItem('biometricEmail');
       setIsBiometricEnabled(enabled === 'true' && bioEmail === userData.email);
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'E-mail ou senha incorretos');
+      console.log('REAL LOGIN ERROR:', error);
+      throw new Error(error.response?.data?.detail || error.message || 'E-mail ou senha incorretos');
     }
   };
 
@@ -130,7 +131,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Biometria não configurada para conta nova
       setIsBiometricEnabled(false);
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erro ao registrar');
+      console.log('REAL REGISTER ERROR:', error);
+      throw new Error(error.response?.data?.detail || error.message || 'Erro ao registrar');
     }
   };
 
