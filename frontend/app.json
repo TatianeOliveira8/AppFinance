@@ -28,6 +28,7 @@
     },
     "android": {
       "package": "com.tati.financeapp",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2196F3"
