@@ -80,13 +80,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     try {
-      // 1. Autentica no Firebase (Requisito 1)
+      // 1. Autentica no Firebase (Comentado temporariamente para isolar rede)
+      /*
       try {
         await signInWithEmailAndPassword(firebaseAuth, email, password);
         console.log('Firebase: Autenticado com sucesso!');
       } catch (fbErr) {
         console.log('Firebase: Erro ou usuário não existe no Firebase, tentando backend direto...');
       }
+      */
 
       // 2. Autentica no seu backend para pegar o JWT
       const data = await authService.login(email, password);
@@ -110,13 +112,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (email: string, password: string) => {
     try {
-      // 1. Cria no Firebase (Requisito 1)
+      // 1. Cria no Firebase (Comentado temporariamente para isolar rede)
+      /*
       try {
         await createUserWithEmailAndPassword(firebaseAuth, email, password);
         console.log('Firebase: Usuário criado com sucesso!');
       } catch (fbErr) {
         console.log('Firebase: Erro ao criar usuário no Firebase (talvez já exista).');
       }
+      */
 
       // 2. Cria no seu backend
       const data = await authService.register(email, password);
