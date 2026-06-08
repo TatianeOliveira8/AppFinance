@@ -28,7 +28,6 @@
     },
     "android": {
       "package": "com.tati.financeapp",
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2196F3"
@@ -41,6 +40,14 @@
     "plugins": [
       [
         "expo-secure-store"
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
     "extra": {
